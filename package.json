@@ -1,0 +1,24 @@
+{
+  "name": "pi-account-switcher",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Pi extension for quickly switching between multiple accounts/API keys per provider.",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@mariozechner/pi-ai": "latest",
+    "@mariozechner/pi-coding-agent": "latest",
+    "zod": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "typescript": "latest",
+    "vitest": "latest"
+  },
+  "pi": {
+    "extensions": ["./src/index.ts"]
+  }
+}
