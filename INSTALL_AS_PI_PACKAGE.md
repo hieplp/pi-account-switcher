@@ -22,11 +22,11 @@ Install project-locally, writing to `.pi/settings.json`:
 pi install -l git:github.com/hieplp/pi-account-switcher
 ```
 
-Then inside Pi:
+Then inside Pi, add your first account:
 
 ```txt
 /reload
-/account-init
+/accounts:add
 ```
 
 ## Install like `pi install npm:pi-subagents`
@@ -34,7 +34,7 @@ Then inside Pi:
 The package is configured for npm publishing with:
 
 - `keywords: ["pi-package", "pi-extension", ...]`
-- `pi.extensions: ["./src/index.ts"]`
+- `pi.extensions: ["./src/extension.ts"]`
 - Pi core packages in `peerDependencies`
 - runtime dependency `zod` in `dependencies`
 - package files limited to `src`, `README.md`, `USAGE.md`, and this install guide

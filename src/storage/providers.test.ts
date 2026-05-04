@@ -1,76 +1,50 @@
 import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { describe, expect, it } from "vitest";
-import { addProvider, loadProviderCatalog } from "./providers.js";
+import { describe, expect, it, vi } from "vitest";
+import { useProviderService } from "@/services/providers";
+import { useProviderStore } from "./providers";
 
-async function tempProvidersPath(): Promise<string> {
-	return join(await mkdtemp(join(tmpdir(), "pi-account-switcher-providers-")), "providers.json");
+function createPiStub() {
+  return {
+    registerProvider: vi.fn(),
+  } as never;
 }
 
-describe("provider storage", () => {
-	it("loads Pi models.json-style provider objects", async () => {
-		const path = await tempProvidersPath();
-		await writeFile(
-			path,
-			JSON.stringify({
-				providers: {
-					chiasegpu: {
-						baseUrl: "https://llm.chiasegpu.vn/v1",
-						api: "openai-completions",
-						apiKey: "CHIASEGPU_API_KEY",
-						compat: { supportsUsageInStreaming: false, maxTokensField: "max_tokens" },
-						models: [{ id: "claude-sonnet", name: "Claude Sonnet" }],
-					},
-				},
-			}),
-		);
+describe("ProviderStore", () => {
+  it("loads provider records and normalizes ids", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "account-switcher-"));
+    const path = join(dir, "providers.json");
+    await writeFile(path, JSON.stringify({ providers: { "Acme AI": { name: "Acme", apiKey: "ACME_API_KEY" } } }));
 
-		const config = await loadProviderCatalog(path);
+    await expect(useProviderStore(path).load()).resolves.toMatchObject([
+      { id: "acme-ai", name: "Acme", label: "Acme", envKeys: ["ACME_API_KEY"] },
+    ]);
+  });
 
-		expect(config.providers).toEqual([
-			expect.objectContaining({
-				id: "chiasegpu",
-				baseUrl: "https://llm.chiasegpu.vn/v1",
-				api: "openai-completions",
-				apiKey: "CHIASEGPU_API_KEY",
-				envKeys: ["CHIASEGPU_API_KEY"],
-				models: [expect.objectContaining({ id: "claude-sonnet" })],
-			}),
-		]);
-	});
+  it("rejects invalid provider catalog shapes", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "account-switcher-"));
+    const path = join(dir, "providers.json");
+    await writeFile(path, JSON.stringify({ providers: "invalid" }));
 
-	it("defaults model-capable providers to openai-completions when api is omitted", async () => {
-		const path = await tempProvidersPath();
-		await addProvider({ id: "nexai", baseUrl: "https://nexai.test/v1", apiKey: "sk-test", models: [{ id: "gpt-5.5", name: "GPT 5.5" }] }, path);
+    await expect(useProviderStore(path).load()).rejects.toThrow(/providers.json must contain either/);
+  });
+});
 
-		const config = await loadProviderCatalog(path);
-		expect(config.providers[0]?.api).toBe("openai-completions");
-	});
+describe("ProviderService", () => {
+  it("rejects duplicate provider ids on edit", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "account-switcher-"));
+    const path = join(dir, "providers.json");
+    const service = useProviderService(createPiStub(), path);
 
-	it("ignores an alias that is the same as the provider id", async () => {
-		const path = await tempProvidersPath();
-		await addProvider({ id: "nexai", aliases: ["nexai"] }, path);
+    await service.load();
+    await service.addProvider({ id: "acme", label: "Acme" });
+    await service.addProvider({ id: "other", label: "Other" });
 
-		const config = await loadProviderCatalog(path);
-		expect(config.providers[0]?.aliases).toEqual([]);
-	});
+    await expect(
+      service.editProvider({ id: "other", label: "Other" }, { id: "acme", label: "Renamed" }),
+    ).rejects.toThrow(/Provider already exists: acme/);
 
-	it("saves providers as Pi models.json-style provider objects", async () => {
-		const path = await tempProvidersPath();
-		await addProvider({ id: "wokushop", label: "WokuShop", baseUrl: "https://llm.wokushop.com/v1", api: "openai-completions", apiKey: "WOKUSHOP_API_KEY", envKeys: ["WOKUSHOP_API_KEY"], models: [{ id: "gpt-5.2", name: "GPT-5.2" }] }, path);
-
-		const saved = JSON.parse(await readFile(path, "utf8"));
-		expect(saved).toEqual({
-			providers: {
-				wokushop: expect.objectContaining({
-					name: "WokuShop",
-					baseUrl: "https://llm.wokushop.com/v1",
-					api: "openai-completions",
-					apiKey: "WOKUSHOP_API_KEY",
-					models: [{ id: "gpt-5.2", name: "GPT-5.2" }],
-				}),
-			},
-		});
-	});
+    await expect(readFile(path, "utf8")).resolves.toContain('"id": "other"');
+  });
 });

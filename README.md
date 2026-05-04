@@ -32,11 +32,11 @@ Install project-locally, writing to `.pi/settings.json`:
 pi install -l git:github.com/hieplp/pi-account-switcher
 ```
 
-Then restart or reload Pi and initialize the config:
+Then restart or reload Pi and add your first account:
 
 ```txt
 /reload
-/account-init
+/accounts:add
 ```
 
 ### From npm
@@ -67,29 +67,25 @@ From this repo:
 
 ```bash
 npm install
-pi -e ./src/index.ts
+pi -e ./src/extension.ts
 ```
 
 ## Commands
 
-- `/account` — pick an account for the current model provider.
-- `/account anthropic` — pick an Anthropic/Claude account explicitly.
-- `/account openai` — pick an OpenAI/Codex account explicitly.
-- `/accounts` — list configured accounts.
-- `/account-current` — show active account.
-- `/account-debug` — show non-secret debug info for the current provider/auth state.
-- `/account-add` — add a new account interactively from inside Pi; duplicate ids can be replaced, renamed, or canceled.
-- `/account-login` — add and immediately activate an account/API key from inside Pi.
-- `/account-edit` — edit label, provider, id, and env credential source without printing secrets.
-- `/account-remove` — delete an account and clear stale saved state selections.
-- `/account-test` — validate that configured credentials resolve without printing secret values.
-- `/account-oauth-import` — import the currently logged-in Pi `/login` OAuth credentials as a switchable account.
-- `/providers` — list built-in and custom providers.
-- `/provider-add` — add a reusable custom provider with env key suggestions and aliases.
-- `/provider-edit` — edit a custom provider; built-in providers are read-only.
-- `/provider-remove` — remove an unused custom provider.
-- `/account-reload` — reload config from disk.
-- `/account-init` — create an example config if missing.
+- `/accounts:list` — list configured accounts and activate the selected account.
+- `/accounts:add` — add a new account interactively; duplicate ids can be replaced, renamed, or canceled.
+- `/accounts:edit` — edit label, provider, id, and credential source without printing secrets.
+- `/accounts:remove` — delete an account and clear stale saved state selections.
+- `/accounts:switch` — switch to another account within the current provider.
+- `/accounts:oauth` — import the currently logged-in Pi `/login` OAuth credentials as a switchable account.
+- `/providers:list` — list custom providers.
+- `/providers:add` — add a reusable custom provider with env key suggestions and aliases.
+- `/providers:edit` — edit a custom provider.
+- `/providers:remove` — remove an unused custom provider.
+- `/models:list` — list all available models and switch to the selected one.
+- `/models:add` — add a custom model config to the current provider.
+- `/models:remove` — remove a custom model config from the current provider.
+- `/system:reset` — delete all account-switcher accounts, providers, and state.
 
 ## OAuth Login Like Pi `/login`
 
@@ -104,7 +100,7 @@ Flow:
 Select the provider and complete browser/device login. Then run:
 
 ```txt
-/account-oauth-import
+/accounts:oauth
 ```
 
 Give that login a label/id, for example `Claude — Work` or `Codex — Personal`.
@@ -112,8 +108,8 @@ Give that login a label/id, for example `Claude — Work` or `Codex — Personal
 To add another OAuth account for the same provider:
 
 1. Run built-in `/login` again and sign into the other browser account.
-2. Run `/account-oauth-import` again and save it under another label.
-3. Switch between saved OAuth accounts with `/account`.
+2. Run `/accounts:oauth` again and save it under another label.
+3. Switch between saved OAuth accounts with `/accounts:list`.
 
 OAuth credentials are captured from Pi's auth file:
 
@@ -121,20 +117,14 @@ OAuth credentials are captured from Pi's auth file:
 ~/.pi/agent/auth.json
 ```
 
-When you switch accounts, this extension writes the selected OAuth credentials back to that Pi auth file and Pi's live auth storage, then clears cached provider sessions when Pi exposes cleanup hooks.
+When you switch accounts, this extension applies the stored OAuth credentials to Pi's live auth storage and clears cached provider sessions when Pi exposes cleanup hooks.
 
-## Add/Login from Inside Pi
+## Add Accounts from Inside Pi
 
 You can configure accounts without manually creating JSON:
 
 ```txt
-/account-add
-```
-
-or add and activate immediately:
-
-```txt
-/account-login
+/accounts:add
 ```
 
 The wizard asks for:
@@ -161,10 +151,10 @@ When you enter a free-text custom provider, Pi can save it as a reusable provide
 ## Custom Providers
 
 ```txt
-/providers
-/provider-add
-/provider-edit
-/provider-remove
+/providers:list
+/providers:add
+/providers:edit
+/providers:remove
 ```
 
 Custom providers live separately from accounts:
@@ -173,7 +163,7 @@ Custom providers live separately from accounts:
 ~/.pi/account-switcher/providers.json
 ```
 
-Built-in providers are read-only. Custom providers can define Pi model-provider fields (`baseUrl`, `api`, `apiKey`, `compat`, `models`) plus account-switcher metadata (`envKeys`, `aliases`, `piAuthProvider`). The extension registers model-capable custom providers with Pi on startup and when `/provider-add` or `/provider-edit` is used. Removing a custom provider is blocked while any account still uses it; edit or remove those accounts first.
+Built-in providers are read-only. Custom providers can define Pi model-provider fields (`baseUrl`, `api`, `apiKey`, `compat`, `models`) plus account-switcher metadata (`envKeys`, `aliases`, `piAuthProvider`). The extension registers model-capable custom providers with Pi on startup and when `/providers:add` is used. Removing a custom provider is blocked while any account still uses it; edit or remove those accounts first.
 
 `apiKey` can be an env var name, shell command (`!op read ...`), or raw key. Raw keys work, but they are stored in plaintext in `providers.json`; prefer env/file/1Password when possible.
 
@@ -195,19 +185,16 @@ Example:
 }
 ```
 
-## Edit, Remove, and Test Accounts
+## Edit and Remove Accounts
 
 ```txt
-/account-edit
-/account-remove
-/account-test
+/accounts:edit
+/accounts:remove
 ```
 
-`/account-edit` preserves existing values when you leave text prompts blank. It never displays literal secret values by default.
+`/accounts:edit` preserves existing values when you leave text prompts blank. It never displays literal secret values by default.
 
-`/account-remove` shows a non-secret summary, asks for confirmation, deletes the account, and clears any saved selected state that referenced it.
-
-`/account-test` checks literal/env/file/command/1Password/Pi OAuth sources and reports only whether each source resolves to a non-empty value.
+`/accounts:remove` shows a non-secret summary, asks for confirmation, deletes the account, and clears any saved selected state that referenced it.
 
 ## Config
 
