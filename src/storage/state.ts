@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { STATE_PATH } from "./paths.js";
-import type { AccountSwitcherState } from "./types.js";
+import type { AccountSwitcherState } from "../domain/types.js";
 
 const DEFAULT_STATE: AccountSwitcherState = { selected: {} };
 

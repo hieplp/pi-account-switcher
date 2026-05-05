@@ -1,10 +1,11 @@
-export const COMMON_PROVIDERS = ["anthropic", "openai", "google", "xai", "openrouter", "custom"] as const;
+export const COMMON_PROVIDERS = ["anthropic", "openai", "openai-codex", "google", "xai", "openrouter", "custom"] as const;
 
 export const PROVIDER_ENV_KEYS: Record<string, string[]> = {
 	anthropic: ["ANTHROPIC_API_KEY"],
 	claude: ["ANTHROPIC_API_KEY"],
 	openai: ["OPENAI_API_KEY"],
 	codex: ["OPENAI_API_KEY"],
+	"openai-codex": ["OPENAI_API_KEY"],
 	google: ["GOOGLE_API_KEY", "GEMINI_API_KEY"],
 	gemini: ["GOOGLE_API_KEY", "GEMINI_API_KEY"],
 	xai: ["XAI_API_KEY"],
@@ -14,7 +15,7 @@ export const PROVIDER_ENV_KEYS: Record<string, string[]> = {
 export function normalizeProvider(provider: string): string {
 	const p = provider.toLowerCase().trim();
 	if (p === "claude") return "anthropic";
-	if (p === "codex") return "openai";
+	if (p === "codex" || p === "openai-codex") return "openai";
 	if (p === "gemini") return "google";
 	return p;
 }

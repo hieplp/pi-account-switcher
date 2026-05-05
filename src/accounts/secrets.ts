@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { exec as execCallback } from "node:child_process";
 import { promisify } from "node:util";
-import type { AccountConfig, SecretSource } from "./types.js";
+import type { AccountConfig, SecretSource } from "../domain/types.js";
 
 const exec = promisify(execCallback);
 

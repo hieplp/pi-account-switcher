@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { PI_AUTH_PATH } from "./paths.js";
-import type { PiAuthEntry } from "./types.js";
+import type { PiAuthEntry } from "../domain/types.js";
 
 export type PiAuthFile = Record<string, PiAuthEntry>;
 

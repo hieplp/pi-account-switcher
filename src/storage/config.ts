@@ -2,7 +2,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { z } from "zod";
 import { CONFIG_PATH } from "./paths.js";
-import type { AccountConfig, AccountSwitcherConfig } from "./types.js";
+import type { AccountConfig, AccountSwitcherConfig } from "../domain/types.js";
 
 const secretSourceSchema = z.union([
 	z.string().min(1),
