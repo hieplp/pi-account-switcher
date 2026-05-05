@@ -3,6 +3,7 @@ import { dirname } from "node:path";
 import { z } from "zod";
 import { CONFIG_PATH } from "./paths.js";
 import type { AccountConfig, AccountSwitcherConfig } from "../domain/types.js";
+import { formatError } from "../shared/errors.js";
 
 const secretSourceSchema = z.union([
 	z.string().min(1),
@@ -13,21 +14,29 @@ const secretSourceSchema = z.union([
 	z.object({ type: z.literal("op"), reference: z.string().min(1) }),
 ]);
 
+const piAuthEntrySchema = z.union([
+	z.object({ type: z.literal("api_key"), key: z.string().min(1) }),
+	z.object({ type: z.literal("oauth"), refresh: z.string().min(1), access: z.string().min(1), expires: z.number() }).passthrough(),
+]);
+
 const accountSchema = z
 	.object({
 		id: z.string().min(1),
 		label: z.string().min(1),
 		provider: z.string().min(1),
+		model: z.string().min(1).optional(),
 		env: z.record(z.string().min(1), secretSourceSchema).optional(),
+		providerApiKey: secretSourceSchema.optional(),
+		usesProviderApiKey: z.boolean().optional(),
 		piAuth: z
 			.object({
 				provider: z.string().min(1),
-				entry: z.record(z.string(), z.unknown()),
+				entry: piAuthEntrySchema,
 			})
 			.optional(),
 	})
-	.refine((account) => (account.env && Object.keys(account.env).length > 0) || account.piAuth, {
-		message: "Account must define env credentials or piAuth credentials",
+	.refine((account) => (account.env && Object.keys(account.env).length > 0) || account.providerApiKey || account.usesProviderApiKey || account.piAuth, {
+		message: "Account must define env credentials, providerApiKey, provider apiKey, or piAuth credentials",
 	});
 
 const configSchema = z.object({
@@ -113,18 +122,12 @@ function validateConfig(config: AccountSwitcherConfig): void {
 	for (const account of config.accounts) {
 		if (ids.has(account.id)) throw new Error(`Duplicate account id: ${account.id}`);
 		ids.add(account.id);
-		if ((!account.env || Object.keys(account.env).length === 0) && !account.piAuth) {
-			throw new Error(`Account ${account.id} must define env credentials or piAuth credentials`);
+		if ((!account.env || Object.keys(account.env).length === 0) && !account.providerApiKey && !account.usesProviderApiKey && !account.piAuth) {
+			throw new Error(`Account ${account.id} must define env credentials, providerApiKey, provider apiKey, or piAuth credentials`);
 		}
 	}
 }
 
 function isMissingFileError(error: unknown): boolean {
 	return typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT";
-}
-
-function formatError(error: unknown): string {
-	if (error instanceof z.ZodError) return error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
-	if (error instanceof Error) return error.message;
-	return String(error);
 }

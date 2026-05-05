@@ -8,16 +8,16 @@ importers:
 
   .:
     dependencies:
+      zod:
+        specifier: latest
+        version: 4.4.3
+    devDependencies:
       '@mariozechner/pi-ai':
         specifier: latest
         version: 0.73.0(ws@8.20.0)(zod@4.4.3)
       '@mariozechner/pi-coding-agent':
         specifier: latest
         version: 0.73.0(ws@8.20.0)(zod@4.4.3)
-      zod:
-        specifier: latest
-        version: 4.4.3
-    devDependencies:
       '@types/node':
         specifier: latest
         version: 25.6.0

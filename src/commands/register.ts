@@ -1,17 +1,9 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import type { AccountSwitcherRuntime } from "../runtime/account-switcher.js";
-import { registerAccountAddCommands } from "./add.js";
-import { registerAccountListCommands } from "./list.js";
-import { registerAccountManageCommands } from "./manage.js";
-import { registerAccountOAuthCommand } from "./oauth.js";
-import { registerAccountSwitchCommand } from "./switch.js";
-import { registerAccountSystemCommands } from "./system.js";
+import { registerAccountCommands as registerAccountCommandGroup } from "./account/index.js";
+import { registerProviderCommands } from "./provider/index.js";
 
 export function registerAccountCommands(pi: ExtensionAPI, runtime: AccountSwitcherRuntime): void {
-	registerAccountSwitchCommand(pi, runtime);
-	registerAccountListCommands(pi, runtime);
-	registerAccountAddCommands(pi, runtime);
-	registerAccountManageCommands(pi, runtime);
-	registerAccountOAuthCommand(pi, runtime);
-	registerAccountSystemCommands(pi, runtime);
+	registerAccountCommandGroup(pi, runtime);
+	registerProviderCommands(pi, runtime);
 }

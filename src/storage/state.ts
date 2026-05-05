@@ -24,7 +24,7 @@ export async function saveState(state: AccountSwitcherState, path = STATE_PATH):
 
 export async function saveSelectedAccount(provider: string, accountId: string): Promise<void> {
 	const state = await loadState();
-	state.selected[provider] = accountId;
+	state.selected[normalizeProvider(provider)] = accountId;
 	await saveState(state);
 }
 
@@ -56,7 +56,7 @@ export async function replaceSelectedAccount(
 		if (selectedAccountId !== originalId) continue;
 
 		const normalizedProvider = normalizeProvider(provider);
-		if (normalizedProvider === normalizedOriginalProvider && normalizedOriginalProvider !== normalizedNextProvider) {
+		if (normalizedProvider === normalizedOriginalProvider) {
 			delete state.selected[provider];
 			state.selected[normalizedNextProvider] = nextId;
 			changedProviders.push(provider, normalizedNextProvider);

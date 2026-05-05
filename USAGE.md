@@ -134,7 +134,7 @@ OAuth credentials are captured from Pi's auth file:
 ~/.pi/agent/auth.json
 ```
 
-When switching OAuth accounts, this extension writes the selected credentials back to that file and asks whether to reload Pi. Accept the reload prompt; otherwise the current provider client may continue using the previous cached login.
+When switching OAuth accounts, this extension writes the selected credentials back to that file and Pi's live auth storage, then clears cached provider sessions when Pi exposes cleanup hooks.
 
 ## 6. Configure API-key Accounts from Inside Pi
 
@@ -146,7 +146,7 @@ You can add API-key accounts directly from Pi without hand-writing JSON.
 /account-add
 ```
 
-This opens a wizard for provider, label, id, credential env var, and secret source. If the id already exists, choose replace, enter a new id, or cancel.
+This opens a wizard for provider, label, id, credential env var, and secret source. If the id already exists, choose replace, enter a new id, or cancel. For custom model providers, choose a default model, then paste an account API key override or leave it blank to use the provider-level `apiKey`. Switching to that account re-registers the provider key and switches Pi to the account model. If you enter a free-text custom provider, Pi can save it as a reusable provider.
 
 ### Login/add and activate immediately
 
@@ -165,6 +165,43 @@ Warning: if you choose `Paste API key now`, the key is written as plain text to:
 ```
 
 Prefer env vars, files with restricted permissions, or 1Password references.
+
+### Manage custom providers
+
+```txt
+/providers
+/provider-add
+/provider-edit
+/provider-remove
+```
+
+Custom providers are stored separately from accounts:
+
+```txt
+~/.pi/account-switcher/providers.json
+```
+
+Built-in providers are read-only. Removing a custom provider is blocked while accounts still use it. Provider entries may also include Pi model-provider fields like `baseUrl`, `api`, `apiKey`, `compat`, and `models`; account-switcher registers those providers with Pi.
+
+`apiKey` can be an env var name, shell command (`!op read ...`), or raw key. Raw keys work, but they are stored in plaintext in `providers.json`; prefer env/file/1Password when possible.
+
+Example provider config:
+
+```json
+{
+  "providers": {
+    "acme": {
+      "name": "Acme AI",
+      "baseUrl": "https://api.acme.test/v1",
+      "api": "openai-completions",
+      "apiKey": "ACME_API_KEY",
+      "envKeys": ["ACME_API_KEY"],
+      "aliases": ["acme-ai"],
+      "models": [{ "id": "acme-coder", "name": "Acme Coder" }]
+    }
+  }
+}
+```
 
 ## 7. Configure Accounts Manually
 
@@ -340,6 +377,15 @@ Shows a non-secret summary, asks for confirmation, deletes the account, and clea
 
 Checks that literal/env/file/command/1Password/Pi OAuth credentials resolve. Output is redacted: only source kind and pass/fail are shown.
 
+### Manage custom providers
+
+```txt
+/providers
+/provider-add
+/provider-edit
+/provider-remove
+```
+
 ### Reload account config
 
 ```txt
@@ -425,7 +471,7 @@ Example:
 {
   "selected": {
     "anthropic": "claude-work",
-    "openai": "codex-client-a"
+    "openai-codex": "codex-client-a"
   }
 }
 ```
@@ -434,17 +480,9 @@ On Pi session start, the extension restores the saved accounts and applies their
 
 ## 12. Important Note About Credential Caching
 
-This MVP switches accounts by setting `process.env` inside the Pi process.
+The extension updates `process.env`, Pi's live runtime API-key overrides, and Pi's live OAuth auth storage when those hooks are available.
 
-Depending on how Pi/provider clients cache API keys, switching may not affect an already-created provider client immediately.
-
-If the new account does not take effect, run:
-
-```txt
-/reload
-```
-
-or restart Pi.
+If a provider still keeps old credentials cached, run `/reload` or restart Pi.
 
 ## 13. Troubleshooting
 
@@ -474,7 +512,8 @@ Run explicitly:
 Also check that account `provider` values match supported providers:
 
 - `anthropic` / `claude`
-- `openai` / `codex`
+- `openai`
+- `openai-codex` / `codex`
 - `google` / `gemini`
 - `xai`
 - `openrouter`
@@ -490,7 +529,7 @@ Check the configured secret source:
 
 ### Changes do not apply
 
-For OAuth accounts, switch again and accept the reload prompt, or run:
+Switch the account again. If the provider still keeps old credentials cached, run:
 
 ```txt
 /reload

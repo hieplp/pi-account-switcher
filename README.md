@@ -84,6 +84,10 @@ pi -e ./src/index.ts
 - `/account-remove` — delete an account and clear stale saved state selections.
 - `/account-test` — validate that configured credentials resolve without printing secret values.
 - `/account-oauth-import` — import the currently logged-in Pi `/login` OAuth credentials as a switchable account.
+- `/providers` — list built-in and custom providers.
+- `/provider-add` — add a reusable custom provider with env key suggestions and aliases.
+- `/provider-edit` — edit a custom provider; built-in providers are read-only.
+- `/provider-remove` — remove an unused custom provider.
 - `/account-reload` — reload config from disk.
 - `/account-init` — create an example config if missing.
 
@@ -117,7 +121,7 @@ OAuth credentials are captured from Pi's auth file:
 ~/.pi/agent/auth.json
 ```
 
-When you switch accounts, this extension writes the selected OAuth credentials back to that Pi auth file and asks whether to reload Pi. Accept the reload prompt; otherwise Pi may keep using a cached provider client from the previous login.
+When you switch accounts, this extension writes the selected OAuth credentials back to that Pi auth file and Pi's live auth storage, then clears cached provider sessions when Pi exposes cleanup hooks.
 
 ## Add/Login from Inside Pi
 
@@ -149,6 +153,47 @@ The wizard asks for:
 If you paste an API key, it is stored as plain text in the config file. Prefer env/file/1Password for safer storage.
 
 If the new id already exists, Pi asks whether to replace the existing account, enter a new id, or cancel.
+
+For custom model providers, the account wizard asks for a default model and an account API key override. Paste a key to store that account's key in plaintext account config, or leave it blank to use the provider-level `apiKey` from `providers.json`. When you switch to that account, the extension re-registers the provider with that key and switches Pi to the account's configured model.
+
+When you enter a free-text custom provider, Pi can save it as a reusable provider for future account setup.
+
+## Custom Providers
+
+```txt
+/providers
+/provider-add
+/provider-edit
+/provider-remove
+```
+
+Custom providers live separately from accounts:
+
+```txt
+~/.pi/account-switcher/providers.json
+```
+
+Built-in providers are read-only. Custom providers can define Pi model-provider fields (`baseUrl`, `api`, `apiKey`, `compat`, `models`) plus account-switcher metadata (`envKeys`, `aliases`, `piAuthProvider`). The extension registers model-capable custom providers with Pi on startup and when `/provider-add` or `/provider-edit` is used. Removing a custom provider is blocked while any account still uses it; edit or remove those accounts first.
+
+`apiKey` can be an env var name, shell command (`!op read ...`), or raw key. Raw keys work, but they are stored in plaintext in `providers.json`; prefer env/file/1Password when possible.
+
+Example:
+
+```json
+{
+  "providers": {
+    "acme": {
+      "name": "Acme AI",
+      "baseUrl": "https://api.acme.test/v1",
+      "api": "openai-completions",
+      "apiKey": "ACME_API_KEY",
+      "envKeys": ["ACME_API_KEY"],
+      "aliases": ["acme-ai"],
+      "models": [{ "id": "acme-coder", "name": "Acme Coder" }]
+    }
+  }
+}
+```
 
 ## Edit, Remove, and Test Accounts
 
@@ -187,8 +232,8 @@ Example:
       }
     },
     {
-      "id": "codex-personal",
-      "label": "Codex — Personal",
+      "id": "openai-personal",
+      "label": "OpenAI — Personal",
       "provider": "openai",
       "env": {
         "OPENAI_API_KEY": { "type": "file", "path": "~/.keys/openai-personal.txt" }
@@ -224,13 +269,7 @@ On Pi session start, the extension restores saved accounts and applies their env
 
 ## Note About Credential Caching
 
-The MVP switches accounts by updating `process.env`. If Pi/provider clients already cached credentials, you may need to run:
-
-```txt
-/reload
-```
-
-after switching accounts.
+The extension updates `process.env`, Pi's live runtime API-key overrides, and Pi's live OAuth auth storage when those hooks are available. If a provider still keeps old credentials cached, run `/reload` or restart Pi.
 
 ## License
 

@@ -6,15 +6,22 @@ import type { AccountConfig, SecretSource } from "../domain/types.js";
 const exec = promisify(execCallback);
 
 export async function applyAccountEnv(account: AccountConfig): Promise<string[]> {
-	if (!account.env) return [];
-	const applied: string[] = [];
+	const values = await resolveAccountEnvValues(account);
+	for (const [envName, value] of Object.entries(values)) {
+		process.env[envName] = value;
+	}
+	return Object.keys(values);
+}
+
+export async function resolveAccountEnvValues(account: AccountConfig): Promise<Record<string, string>> {
+	if (!account.env) return {};
+	const values: Record<string, string> = {};
 	for (const [envName, source] of Object.entries(account.env)) {
 		const value = await resolveSecret(source);
 		if (!value) throw new Error(`Resolved empty value for ${envName} in account ${account.id}`);
-		process.env[envName] = value;
-		applied.push(envName);
+		values[envName] = value;
 	}
-	return applied;
+	return values;
 }
 
 export async function resolveSecret(source: SecretSource): Promise<string> {
@@ -24,7 +31,7 @@ export async function resolveSecret(source: SecretSource): Promise<string> {
 		case "literal":
 			return source.value;
 		case "env":
-			return process.env[source.name] ?? "";
+			return resolveEnvSecret(source.name);
 		case "file":
 			return (await readFile(expandHome(source.path), "utf8")).trim();
 		case "command":
@@ -32,6 +39,13 @@ export async function resolveSecret(source: SecretSource): Promise<string> {
 		case "op":
 			return runCommand(`op read ${shellQuote(source.reference)}`);
 	}
+}
+
+function resolveEnvSecret(name: string): string {
+	const value = process.env[name];
+	if (value === undefined) throw new Error(`Environment variable ${name} is not set`);
+	if (value.length === 0) throw new Error(`Environment variable ${name} is empty`);
+	return value;
 }
 
 async function resolveStringSource(value: string): Promise<string> {
