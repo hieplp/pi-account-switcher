@@ -1,24 +1,49 @@
 {
   "name": "pi-account-switcher",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "description": "Pi extension for quickly switching between multiple accounts/API keys per provider.",
+  "keywords": [
+    "pi-package",
+    "pi-extension",
+    "pi",
+    "account-switcher"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hieplp/pi-account-switcher.git"
+  },
+  "bugs": {
+    "url": "https://github.com/hieplp/pi-account-switcher/issues"
+  },
+  "homepage": "https://github.com/hieplp/pi-account-switcher#readme",
+  "files": [
+    "src",
+    "README.md",
+    "USAGE.md",
+    "INSTALL_AS_PI_PACKAGE.md"
+  ],
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
   "dependencies": {
-    "@mariozechner/pi-ai": "latest",
-    "@mariozechner/pi-coding-agent": "latest",
     "zod": "latest"
   },
+  "peerDependencies": {
+    "@mariozechner/pi-ai": "*",
+    "@mariozechner/pi-coding-agent": "*"
+  },
   "devDependencies": {
+    "@mariozechner/pi-ai": "latest",
+    "@mariozechner/pi-coding-agent": "latest",
     "@types/node": "latest",
     "typescript": "latest",
     "vitest": "latest"
   },
   "pi": {
-    "extensions": ["./src/index.ts"]
+    "extensions": [
+      "./src/index.ts"
+    ]
   }
 }
