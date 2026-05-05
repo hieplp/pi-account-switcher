@@ -44,7 +44,7 @@ export async function promptForAccount(ctx: { ui: Pick<AccountSwitcherUi, "selec
 	};
 }
 
-async function promptForSecretSource(
+export async function promptForSecretSource(
 	ctx: {
 		ui: Pick<AccountSwitcherUi, "input" | "confirm" | "notify">;
 	},

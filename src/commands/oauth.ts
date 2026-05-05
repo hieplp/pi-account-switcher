@@ -5,6 +5,7 @@ import { formatError } from "../shared/errors.js";
 import { PI_AUTH_PATH } from "../storage/paths.js";
 import { getPiAuthEntry, isOAuthAuthEntry } from "../storage/pi-auth.js";
 import type { AccountSwitcherRuntime } from "../runtime/account-switcher.js";
+import { saveDuplicateSafe } from "./add.js";
 
 export function registerAccountOAuthCommand(pi: ExtensionAPI, runtime: AccountSwitcherRuntime): void {
 	pi.registerCommand("account-oauth-import", {
@@ -31,9 +32,11 @@ export function registerAccountOAuthCommand(pi: ExtensionAPI, runtime: AccountSw
 				const id = (await ctx.ui.input("Account id", slugify(label)))?.trim() || slugify(label);
 				if (!id) throw new Error("Account id is required");
 
+				await runtime.reloadConfig();
 				const account: AccountConfig = { id, label, provider, piAuth: { provider, entry } };
-				await runtime.addConfiguredAccount(account);
-				ctx.ui.notify(`Imported OAuth account ${label}. Use /account ${provider} to switch back to it later.`, "info");
+				const saved = await saveDuplicateSafe(account, runtime, ctx);
+				if (!saved) return;
+				ctx.ui.notify(`Imported OAuth account ${saved.label}. Use /account ${provider} to switch back to it later.`, "info");
 			} catch (error) {
 				ctx.ui.notify(`OAuth import failed: ${formatError(error)}`, "error");
 			}

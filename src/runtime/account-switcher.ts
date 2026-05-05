@@ -1,6 +1,6 @@
-import { addAccount, loadConfig } from "../storage/config.js";
+import { addAccount, loadConfig, removeAccount, replaceAccount } from "../storage/config.js";
 import { normalizeProvider, providerMatches } from "../providers/catalog.js";
-import { loadState, saveSelectedAccount } from "../storage/state.js";
+import { loadState, removeSelectedAccount, replaceSelectedAccount, saveSelectedAccount } from "../storage/state.js";
 import type { AccountConfig, AccountSwitcherConfig } from "../domain/types.js";
 import type { AccountSwitcherContext } from "../shared/ui.js";
 import { applyAccountCredentials } from "../accounts/credentials.js";
@@ -25,6 +25,29 @@ export class AccountSwitcherRuntime {
 
 	async addConfiguredAccount(account: AccountConfig): Promise<void> {
 		this.config = await addAccount(account);
+	}
+
+	async replaceConfiguredAccount(original: AccountConfig, account: AccountConfig): Promise<string[]> {
+		this.config = await replaceAccount(original.id, account);
+		const changedProviders = await replaceSelectedAccount(original.id, account.id, original.provider, account.provider);
+		const originalProvider = normalizeProvider(original.provider);
+		const nextProvider = normalizeProvider(account.provider);
+		for (const [provider, activeAccount] of Array.from(this.activeAccountByProvider.entries())) {
+			if (activeAccount.id !== original.id) continue;
+			this.activeAccountByProvider.delete(provider);
+			this.activeAccountByProvider.set(provider === originalProvider ? nextProvider : provider, account);
+		}
+		if (this.currentProvider && normalizeProvider(this.currentProvider) === originalProvider) this.currentProvider = nextProvider;
+		return changedProviders;
+	}
+
+	async removeConfiguredAccount(account: AccountConfig): Promise<string[]> {
+		this.config = await removeAccount(account.id);
+		const removedProviders = await removeSelectedAccount(account.id);
+		for (const [provider, activeAccount] of this.activeAccountByProvider.entries()) {
+			if (activeAccount.id === account.id) this.activeAccountByProvider.delete(provider);
+		}
+		return removedProviders;
 	}
 
 	async restoreSavedAccounts(ctx: AccountSwitcherContext): Promise<void> {

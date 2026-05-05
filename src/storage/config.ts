@@ -63,6 +63,26 @@ export async function addAccount(account: AccountConfig, path = CONFIG_PATH): Pr
 	return next;
 }
 
+export async function replaceAccount(originalId: string, account: AccountConfig, path = CONFIG_PATH): Promise<AccountSwitcherConfig> {
+	const config = await loadConfig(path);
+	const index = config.accounts.findIndex((candidate) => candidate.id === originalId);
+	if (index === -1) throw new Error(`Account not found: ${originalId}`);
+	const nextAccounts = [...config.accounts];
+	nextAccounts[index] = account;
+	const next: AccountSwitcherConfig = { ...config, accounts: nextAccounts };
+	await saveConfig(next, path);
+	return next;
+}
+
+export async function removeAccount(accountId: string, path = CONFIG_PATH): Promise<AccountSwitcherConfig> {
+	const config = await loadConfig(path);
+	const nextAccounts = config.accounts.filter((account) => account.id !== accountId);
+	if (nextAccounts.length === config.accounts.length) throw new Error(`Account not found: ${accountId}`);
+	const next: AccountSwitcherConfig = { ...config, accounts: nextAccounts };
+	await saveConfig(next, path);
+	return next;
+}
+
 export async function ensureExampleConfig(path = CONFIG_PATH): Promise<void> {
 	await mkdir(dirname(path), { recursive: true });
 	try {

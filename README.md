@@ -78,8 +78,11 @@ pi -e ./src/index.ts
 - `/accounts` — list configured accounts.
 - `/account-current` — show active account.
 - `/account-debug` — show non-secret debug info for the current provider/auth state.
-- `/account-add` — add a new account interactively from inside Pi.
+- `/account-add` — add a new account interactively from inside Pi; duplicate ids can be replaced, renamed, or canceled.
 - `/account-login` — add and immediately activate an account/API key from inside Pi.
+- `/account-edit` — edit label, provider, id, and env credential source without printing secrets.
+- `/account-remove` — delete an account and clear stale saved state selections.
+- `/account-test` — validate that configured credentials resolve without printing secret values.
 - `/account-oauth-import` — import the currently logged-in Pi `/login` OAuth credentials as a switchable account.
 - `/account-reload` — reload config from disk.
 - `/account-init` — create an example config if missing.
@@ -144,6 +147,22 @@ The wizard asks for:
    - 1Password `op://` reference
 
 If you paste an API key, it is stored as plain text in the config file. Prefer env/file/1Password for safer storage.
+
+If the new id already exists, Pi asks whether to replace the existing account, enter a new id, or cancel.
+
+## Edit, Remove, and Test Accounts
+
+```txt
+/account-edit
+/account-remove
+/account-test
+```
+
+`/account-edit` preserves existing values when you leave text prompts blank. It never displays literal secret values by default.
+
+`/account-remove` shows a non-secret summary, asks for confirmation, deletes the account, and clears any saved selected state that referenced it.
+
+`/account-test` checks literal/env/file/command/1Password/Pi OAuth sources and reports only whether each source resolves to a non-empty value.
 
 ## Config
 

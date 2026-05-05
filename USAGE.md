@@ -146,7 +146,7 @@ You can add API-key accounts directly from Pi without hand-writing JSON.
 /account-add
 ```
 
-This opens a wizard for provider, label, id, credential env var, and secret source.
+This opens a wizard for provider, label, id, credential env var, and secret source. If the id already exists, choose replace, enter a new id, or cancel.
 
 ### Login/add and activate immediately
 
@@ -315,6 +315,30 @@ Use this after Pi's built-in `/login`.
 ```txt
 /account-login
 ```
+
+### Edit account
+
+```txt
+/account-edit
+```
+
+Edit label, provider, id, and env credential source. Blank text input keeps the existing value. Literal secret values are not displayed by default.
+
+### Remove account
+
+```txt
+/account-remove
+```
+
+Shows a non-secret summary, asks for confirmation, deletes the account, and clears stale saved selections.
+
+### Test credentials
+
+```txt
+/account-test
+```
+
+Checks that literal/env/file/command/1Password/Pi OAuth credentials resolve. Output is redacted: only source kind and pass/fail are shown.
 
 ### Reload account config
 
