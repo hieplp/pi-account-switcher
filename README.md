@@ -10,7 +10,58 @@ Examples:
 - `openai/team`
 - `gemini/testing`
 
-## Install / Run Locally
+## Install
+
+### From GitHub
+
+Install globally:
+
+```bash
+pi install git:github.com/hieplp/pi-account-switcher
+```
+
+Or test for one Pi run without permanently installing:
+
+```bash
+pi -e git:github.com/hieplp/pi-account-switcher
+```
+
+Install project-locally, writing to `.pi/settings.json`:
+
+```bash
+pi install -l git:github.com/hieplp/pi-account-switcher
+```
+
+Then restart or reload Pi and initialize the config:
+
+```txt
+/reload
+/account-init
+```
+
+### From npm
+
+After the package is published to npm, install globally with:
+
+```bash
+pi install npm:pi-account-switcher
+```
+
+Or project-locally:
+
+```bash
+pi install -l npm:pi-account-switcher
+```
+
+To test without permanently installing:
+
+```bash
+pi -e npm:pi-account-switcher
+```
+
+See [INSTALL_AS_PI_PACKAGE.md](./INSTALL_AS_PI_PACKAGE.md) for publishing notes.
+
+### Run from a Local Checkout
 
 From this repo:
 
@@ -18,8 +69,6 @@ From this repo:
 npm install
 pi -e ./src/index.ts
 ```
-
-Or install as a Pi package/extension later.
 
 ## Commands
 
@@ -163,3 +212,7 @@ The MVP switches accounts by updating `process.env`. If Pi/provider clients alre
 ```
 
 after switching accounts.
+
+## License
+
+MIT. See [LICENSE](./LICENSE).

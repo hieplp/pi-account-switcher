@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "type": "module",
   "description": "Pi extension for quickly switching between multiple accounts/API keys per provider.",
+  "license": "MIT",
   "keywords": [
     "pi-package",
     "pi-extension",
