@@ -1,6 +1,6 @@
 # Install Pi Account Switcher as a Pi Package
 
-This repo can be installed by Pi from GitHub now, and can be installed with `pi install npm:pi-account-switcher` after it is published to npm.
+This repo can be installed by Pi from GitHub now, and can be installed with `pi install npm:@hieplp/pi-account-switcher` after it is published to npm.
 
 ## Install from GitHub
 
@@ -29,7 +29,7 @@ Then inside Pi, add your first account:
 /accounts:add
 ```
 
-## Install like `pi install npm:pi-subagents`
+## Install like `pi install npm:@hieplp/pi-account-switcher`
 
 The package is configured for npm publishing with:
 
@@ -53,46 +53,26 @@ Optional: verify what will be published:
 npm pack --dry-run
 ```
 
-Publish:
-
-```bash
-npm publish
-```
-
-After publishing, users can install globally with:
-
-```bash
-pi install npm:pi-account-switcher
-```
-
-Or install project-locally with:
-
-```bash
-pi install -l npm:pi-account-switcher
-```
-
-To test without permanently installing:
-
-```bash
-pi -e npm:pi-account-switcher
-```
-
-## Scoped npm package option
-
-If publishing under your npm scope, set the package name in `package.json` to:
-
-```json
-"name": "@hieplp/pi-account-switcher"
-```
-
-Publish scoped public packages with:
+Publish (scoped packages require `--access public`):
 
 ```bash
 npm publish --access public
 ```
 
-Install:
+After publishing, users can install globally with:
 
 ```bash
 pi install npm:@hieplp/pi-account-switcher
+```
+
+Or install project-locally with:
+
+```bash
+pi install -l npm:@hieplp/pi-account-switcher
+```
+
+To test without permanently installing:
+
+```bash
+pi -e npm:@hieplp/pi-account-switcher
 ```
