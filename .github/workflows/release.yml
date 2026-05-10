@@ -34,32 +34,24 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Create release branch
-        run: git checkout -b "release/v${VERSION}"
-
       - name: Bump version
         run: npm version "$VERSION" --no-git-tag-version
 
       - name: Install git-cliff
         uses: taiki-e/install-action@git-cliff
 
-      - name: Generate release notes (this release only)
+      - name: Generate release notes
         run: git-cliff --tag "v${VERSION}" --latest -o RELEASE_NOTES.md
 
-      - name: Update CHANGELOG.md (full history)
-        run: git-cliff --tag "v${VERSION}" -o CHANGELOG.md
-
-      - name: Commit
+      - name: Commit and tag
         run: |
-          git add package.json package-lock.json CHANGELOG.md
+          git add package.json package-lock.json
           git commit -m "chore(release): v${VERSION}"
+          git tag "v${VERSION}"
 
-      - name: Tag
-        run: git tag "v${VERSION}"
-
-      - name: Push branch and tag
+      - name: Push
         run: |
-          git push origin "release/v${VERSION}"
+          git push origin main
           git push origin "v${VERSION}"
 
       - name: Create GitHub release
