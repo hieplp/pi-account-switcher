@@ -1,0 +1,70 @@
+name: Prepare Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (e.g. 0.1.3)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create release
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ inputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create release branch
+        run: git checkout -b "release/v${VERSION}"
+
+      - name: Bump version
+        run: npm version "$VERSION" --no-git-tag-version
+
+      - name: Install git-cliff
+        uses: taiki-e/install-action@git-cliff
+
+      - name: Generate release notes (this release only)
+        run: git-cliff --tag "v${VERSION}" --latest -o RELEASE_NOTES.md
+
+      - name: Update CHANGELOG.md (full history)
+        run: git-cliff --tag "v${VERSION}" -o CHANGELOG.md
+
+      - name: Commit
+        run: |
+          git add package.json package-lock.json CHANGELOG.md
+          git commit -m "chore(release): v${VERSION}"
+
+      - name: Tag
+        run: git tag "v${VERSION}"
+
+      - name: Push branch and tag
+        run: |
+          git push origin "release/v${VERSION}"
+          git push origin "v${VERSION}"
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ inputs.version }}
+          name: v${{ inputs.version }}
+          body_path: RELEASE_NOTES.md

@@ -1,0 +1,49 @@
+import type { ExtensionUIContext } from "@mariozechner/pi-coding-agent";
+import { commonUtil } from "./common.js";
+import { FilterableExtensionSelectorComponent } from "./filterable-selector.js";
+
+function deduplicateLabels(labels: string[]): string[] {
+  const seen = new Map<string, number>();
+  return labels.map((label) => {
+    const n = (seen.get(label) ?? 0) + 1;
+    seen.set(label, n);
+    return n > 1 ? `${label} (${n})` : label;
+  });
+}
+
+export const uiUtil = {
+  /** Returns a prompt builder for a single input, parsed as text, CSV, JSON array, or JSON record. */
+  prompt: (ui: ExtensionUIContext) => (title: string, hint?: string) => ({
+    asText: async () => commonUtil.blankToUndefined(await ui.input(title, hint)),
+    asCsv: async () => commonUtil.parseCsv((await ui.input(title, hint)) ?? ""),
+    asJsonArray: async (field: string) => commonUtil.parseJsonArray(await ui.input(title, hint), field),
+    asJsonRecord: async (field: string) => commonUtil.parseJsonRecord(await ui.input(title, hint), field),
+  }),
+
+  setAccountStatus: (ui: ExtensionUIContext, label: string | undefined): void => {
+    ui.setStatus("account", label ? `👤 ${label}` : undefined);
+  },
+
+  /** Like filteredSelect but skips items where the corresponding value is null (used for group headers). */
+  filteredGroupedSelect: async <T>(
+    ui: ExtensionUIContext,
+    title: string,
+    labels: string[],
+    values: Array<T | null>,
+  ): Promise<T | undefined> => {
+    const deduped = deduplicateLabels(labels);
+    while (true) {
+      const selected = await uiUtil.filteredSelect(ui, title, deduped);
+      if (selected === undefined) return undefined;
+      const value = values[deduped.indexOf(selected)];
+      if (value !== null) return value;
+    }
+  },
+
+  /** Show a selector using the custom filterable component. */
+  filteredSelect: (ui: ExtensionUIContext, title: string, options: string[]): Promise<string | undefined> => {
+    return ui.custom<string | undefined>(
+      (_tui, theme, _keybindings, done) => new FilterableExtensionSelectorComponent(title, options, done, theme),
+    );
+  },
+};

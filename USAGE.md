@@ -21,27 +21,19 @@ npm run typecheck
 The fastest way to test the extension is with Pi's `-e` / `--extension` flag:
 
 ```bash
-pi -e ./src/index.ts
+pi -e ./src/extension.ts
 ```
 
-Then, inside Pi, run:
+Then, inside Pi, add your first account:
 
 ```txt
-/account-init
+/accounts:add
 ```
 
-This creates an example config file at:
+To reload after manually editing the config file, use Pi's built-in:
 
 ```txt
-~/.pi/account-switcher/accounts.json
-```
-
-Edit that file with your real accounts and API key sources.
-
-Then reload the extension config:
-
-```txt
-/account-reload
+/reload
 ```
 
 ## 3. Install as a Project-local Pi Extension
@@ -76,10 +68,10 @@ Pi auto-discovers extensions from:
 ~/.pi/agent/extensions/*/index.ts
 ```
 
-Because this repo uses `src/index.ts`, the easiest dev command remains:
+The easiest dev command is:
 
 ```bash
-pi -e ./src/index.ts
+pi -e ./src/extension.ts
 ```
 
 ## 4. Install Globally for All Pi Projects
@@ -109,23 +101,15 @@ For subscription/OAuth providers, use Pi's built-in login first, then import tha
 
 ```txt
 /login
-/account-oauth-import
+/accounts:oauth
 ```
 
-To add another OAuth account for the same provider, run `/login` again with the other browser account, then run `/account-oauth-import` again with a different label.
+To add another OAuth account for the same provider, run `/login` again with the other browser account, then run `/accounts:oauth` again with a different label.
 
 Switch OAuth accounts with:
 
 ```txt
-/account
-```
-
-or explicitly:
-
-```txt
-/account anthropic
-/account openai-codex
-/account github-copilot
+/accounts:list
 ```
 
 OAuth credentials are captured from Pi's auth file:
@@ -134,7 +118,7 @@ OAuth credentials are captured from Pi's auth file:
 ~/.pi/agent/auth.json
 ```
 
-When switching OAuth accounts, this extension writes the selected credentials back to that file and Pi's live auth storage, then clears cached provider sessions when Pi exposes cleanup hooks.
+When switching OAuth accounts, this extension applies the stored credentials to Pi's live auth storage and clears cached provider sessions when Pi exposes cleanup hooks.
 
 ## 6. Configure API-key Accounts from Inside Pi
 
@@ -143,18 +127,10 @@ You can add API-key accounts directly from Pi without hand-writing JSON.
 ### Add an account
 
 ```txt
-/account-add
+/accounts:add
 ```
 
-This opens a wizard for provider, label, id, credential env var, and secret source. If the id already exists, choose replace, enter a new id, or cancel. For custom model providers, choose a default model, then paste an account API key override or leave it blank to use the provider-level `apiKey`. Switching to that account re-registers the provider key and switches Pi to the account model. If you enter a free-text custom provider, Pi can save it as a reusable provider.
-
-### Login/add and activate immediately
-
-```txt
-/account-login
-```
-
-This uses the same wizard as `/account-add`, then immediately activates the new account.
+This opens a wizard for provider, label, id, credential env var, and secret source, then optionally activates the new account. If the id already exists, choose replace, enter a new id, or cancel. For custom model providers, choose a default model, then paste an account API key override or leave it blank to use the provider-level `apiKey`. Switching to that account re-registers the provider key and switches Pi to the account model. If you enter a free-text custom provider, Pi can save it as a reusable provider.
 
 The wizard supports secret sources from pasted API key, env var, file, shell command, or 1Password `op://` reference.
 
@@ -169,10 +145,10 @@ Prefer env vars, files with restricted permissions, or 1Password references.
 ### Manage custom providers
 
 ```txt
-/providers
-/provider-add
-/provider-edit
-/provider-remove
+/providers:list
+/providers:add
+/providers:edit
+/providers:remove
 ```
 
 Custom providers are stored separately from accounts:
@@ -209,12 +185,6 @@ Account config lives at:
 
 ```txt
 ~/.pi/account-switcher/accounts.json
-```
-
-You can create an example file from inside Pi:
-
-```txt
-/account-init
 ```
 
 Example config:
@@ -306,7 +276,7 @@ A plain string is treated as a literal value, except strings beginning with `op:
 ### Pick account for current provider
 
 ```txt
-/account
+/accounts:list
 ```
 
 The extension tries to detect the current model provider and shows matching accounts.
@@ -314,9 +284,7 @@ The extension tries to detect the current model provider and shows matching acco
 ### Pick account for a specific provider
 
 ```txt
-/account anthropic
-/account openai
-/account google
+/accounts:list
 ```
 
 Useful if Pi cannot detect the active provider.
@@ -324,19 +292,13 @@ Useful if Pi cannot detect the active provider.
 ### List accounts
 
 ```txt
-/accounts
-```
-
-### Show current account
-
-```txt
-/account-current
+/accounts:list
 ```
 
 ### Import current Pi OAuth login
 
 ```txt
-/account-oauth-import
+/accounts:oauth
 ```
 
 Use this after Pi's built-in `/login`.
@@ -344,19 +306,19 @@ Use this after Pi's built-in `/login`.
 ### Add account interactively
 
 ```txt
-/account-add
+/accounts:add
 ```
 
 ### Login/add account and activate it
 
 ```txt
-/account-login
+/accounts:add
 ```
 
 ### Edit account
 
 ```txt
-/account-edit
+/accounts:edit
 ```
 
 Edit label, provider, id, and env credential source. Blank text input keeps the existing value. Literal secret values are not displayed by default.
@@ -364,44 +326,18 @@ Edit label, provider, id, and env credential source. Blank text input keeps the 
 ### Remove account
 
 ```txt
-/account-remove
+/accounts:remove
 ```
 
 Shows a non-secret summary, asks for confirmation, deletes the account, and clears stale saved selections.
 
-### Test credentials
-
-```txt
-/account-test
-```
-
-Checks that literal/env/file/command/1Password/Pi OAuth credentials resolve. Output is redacted: only source kind and pass/fail are shown.
-
 ### Manage custom providers
 
 ```txt
-/providers
-/provider-add
-/provider-edit
-/provider-remove
-```
-
-### Reload account config
-
-```txt
-/account-reload
-```
-
-Use this after editing:
-
-```txt
-~/.pi/account-switcher/accounts.json
-```
-
-### Create example config
-
-```txt
-/account-init
+/providers:list
+/providers:add
+/providers:edit
+/providers:remove
 ```
 
 ## 10. Switching Flow
@@ -411,45 +347,29 @@ Typical usage:
 1. Start Pi:
 
    ```bash
-   pi -e ./src/index.ts
+   pi -e ./src/extension.ts
    ```
 
 2. For OAuth/subscription accounts, login with Pi and import it:
 
    ```txt
    /login
-   /account-oauth-import
+   /accounts:oauth
    ```
 
    For API-key accounts, add and activate an account:
 
    ```txt
-   /account-login
+   /accounts:add
    ```
 
 3. Later, switch accounts:
 
    ```txt
-   /account
+   /accounts:list
    ```
 
-Alternative manual config flow:
-
-```txt
-/account-init
-```
-
-Then edit:
-
-```txt
-~/.pi/account-switcher/accounts.json
-```
-
-Then reload config:
-
-```txt
-/account-reload
-```
+Alternative manual config flow: edit `~/.pi/account-switcher/accounts.json` directly, then reload Pi:
 
 6. If needed, reload Pi runtime:
 
@@ -469,14 +389,13 @@ Example:
 
 ```json
 {
-  "selected": {
-    "anthropic": "claude-work",
-    "openai-codex": "codex-client-a"
-  }
+  "activeAccountId": "claude-work",
+  "activeModelId": "claude-sonnet-4",
+  "activeModelProvider": "anthropic"
 }
 ```
 
-On Pi session start, the extension restores the saved accounts and applies their environment variables.
+On Pi session start, the extension restores the saved active account and model state.
 
 ## 12. Important Note About Credential Caching
 
@@ -488,25 +407,14 @@ If a provider still keeps old credentials cached, run `/reload` or restart Pi.
 
 ### No accounts configured
 
-Run:
-
-```txt
-/account-init
-```
-
-Then edit:
-
-```txt
-~/.pi/account-switcher/accounts.json
-```
+Run `/accounts:add` to create one interactively, or create `~/.pi/account-switcher/accounts.json` manually.
 
 ### No accounts for provider
 
 Run explicitly:
 
 ```txt
-/account anthropic
-/account openai
+/accounts:list
 ```
 
 Also check that account `provider` values match supported providers:
@@ -533,12 +441,6 @@ Switch the account again. If the provider still keeps old credentials cached, ru
 
 ```txt
 /reload
-```
-
-You can also inspect non-secret debug info:
-
-```txt
-/account-debug
 ```
 
 If it still uses the old account, restart Pi.

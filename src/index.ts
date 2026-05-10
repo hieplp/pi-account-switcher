@@ -1,21 +1,20 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { registerAccountCommands } from "./commands/register.js";
-import { AccountSwitcherRuntime } from "./runtime/account-switcher.js";
-import { registerCustomModelProviders } from "./providers/registration.js";
+import type { AccountSwitcherContext } from "@/types";
+import { useAccountSwitcher, type AccountSwitcher } from "./runtime";
+import { registerAllCommands } from "./commands";
 
-export default async function accountSwitcher(pi: ExtensionAPI) {
-	const runtime = new AccountSwitcherRuntime(pi);
-	await runtime.reloadConfig();
-	registerCustomModelProviders(pi, runtime.providers);
+async function accountSwitcher(pi: ExtensionAPI) {
+  const runtime: AccountSwitcher = useAccountSwitcher(pi);
 
-	pi.on("session_start", async (_event, ctx) => {
-		await runtime.reloadConfig();
-		await runtime.restoreSavedAccounts(ctx);
-	});
+  pi.on("session_start", async (_, ctx) => {
+    await runtime.init(ctx as AccountSwitcherContext);
+  });
 
-	pi.on("model_select", async (event, ctx) => {
-		runtime.setCurrentProvider(event.model.provider, ctx);
-	});
+  pi.on("model_select", async (event, ctx) => {
+    await runtime.onModelSelect(event.model.provider, ctx as AccountSwitcherContext);
+  });
 
-	registerAccountCommands(pi, runtime);
+  registerAllCommands(pi, runtime);
 }
+
+export default accountSwitcher;
