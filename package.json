@@ -1,6 +1,6 @@
 {
   "name": "@hieplp/pi-account-switcher",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "description": "Pi extension for quickly switching between multiple accounts/API keys per provider.",
   "license": "MIT",
