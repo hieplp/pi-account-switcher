@@ -69,6 +69,31 @@ export abstract class AccountCommand extends BaseCommand {
     accounts: AccountConfig[],
     label = "Pick account",
   ): Promise<AccountConfig | undefined> {
+    const { labels, values } = this.buildGroupedAccountSelectItems(accounts, true);
+    return this.pickGrouped(ctx, label, labels, values);
+  }
+
+  protected async pickGroupedAccounts(
+    ctx: AccountSwitcherContext,
+    accounts: AccountConfig[],
+    label = "Pick accounts",
+  ): Promise<AccountConfig[] | undefined> {
+    const activeId = this.runtime.getActiveAccount()?.id;
+    const { labels, values } = this.buildGroupedAccountSelectItems(accounts, false);
+    const firstAccountIndex = values.findIndex((value) => value !== null);
+    const initialChecked = values.map((value, index) =>
+      activeId ? value?.id === activeId : firstAccountIndex !== -1 && index === firstAccountIndex,
+    );
+    return uiUtil.multiGroupedSelect(ctx.ui, label, labels, values, initialChecked);
+  }
+
+  private buildGroupedAccountSelectItems(
+    accounts: AccountConfig[],
+    includeActiveMarker: boolean,
+  ): {
+    labels: string[];
+    values: Array<AccountConfig | null>;
+  } {
     const items = buildGroupedItems(accounts, this.runtime.getProviders(), this.runtime.getActiveAccount()?.id);
 
     const labels: string[] = [];
@@ -79,10 +104,14 @@ export abstract class AccountCommand extends BaseCommand {
         values.push(null);
         continue;
       }
-      labels.push(formatAccountItem(item));
+      labels.push(includeActiveMarker ? formatAccountItem(item) : this.formatMultiAccountItem(item));
       values.push(item.account);
     }
 
-    return this.pickGrouped(ctx, label, labels, values);
+    return { labels, values };
+  }
+
+  private formatMultiAccountItem(item: Extract<ReturnType<typeof buildGroupedItems>[number], { type: "account" }>): string {
+    return item.active ? `${item.account.label} (active)` : item.account.label;
   }
 }

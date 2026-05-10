@@ -71,4 +71,19 @@ export const commonUtil = {
     });
     return stdout.trim();
   },
+
+  runWithConcurrency: async <T, R>(items: T[], concurrency: number, worker: (item: T) => Promise<R>): Promise<R[]> => {
+    const results = new Array<R>(items.length);
+    let nextIndex = 0;
+
+    const runNext = async (): Promise<void> => {
+      const index = nextIndex++;
+      if (index >= items.length) return;
+      results[index] = await worker(items[index]);
+      await runNext();
+    };
+
+    await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, runNext));
+    return results;
+  },
 };

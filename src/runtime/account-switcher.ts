@@ -26,6 +26,7 @@ export default interface AccountSwitcher {
 
   // Provider
   getProviders(): ProviderConfig[];
+  registerProvider(provider: ProviderConfig): void;
   addProvider(config: ProviderConfig): Promise<void>;
   editProvider(original: ProviderConfig, updated: ProviderConfig): Promise<void>;
   removeProvider(provider: ProviderConfig): Promise<void>;

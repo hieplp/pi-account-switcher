@@ -174,6 +174,10 @@ export default class AccountSwitcherRuntime implements AccountSwitcher {
     return this.providerService.getProviders();
   }
 
+  registerProvider(provider: ProviderConfig): void {
+    this.providerService.registerProvider(provider);
+  }
+
   async addProvider(provider: ProviderConfig): Promise<void> {
     return this.providerService.addProvider(provider);
   }

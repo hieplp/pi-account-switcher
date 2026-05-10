@@ -24,6 +24,11 @@ export const COMMANDS = {
       name: "accounts:oauth",
       description: "Import Pi /login OAuth credentials as a switchable account",
     },
+    verify: {
+      name: "accounts:verify",
+      description:
+        "Verify secrets for one or all accounts without activating them (pass 'all'; add 'ping' to send a test request)",
+    },
   },
   providers: {
     add: {
