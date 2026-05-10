@@ -19,7 +19,7 @@ export interface CommandMeta {
 
 export interface Command extends CommandMeta {
   register(): void;
-  handler(ctx: AccountSwitcherContext): Promise<void>;
+  handler(ctx: AccountSwitcherContext, args?: string): Promise<void>;
 }
 
 export abstract class BaseCommand implements Command {
@@ -38,7 +38,7 @@ export abstract class BaseCommand implements Command {
   register(): void {
     this.pi.registerCommand(this.name, {
       description: this.description,
-      handler: (_, ctx) => this.handler(ctx),
+      handler: (args, ctx) => this.handler(ctx, args),
     });
   }
 
@@ -77,5 +77,5 @@ export abstract class BaseCommand implements Command {
     return ctx.model?.id === modelId;
   }
 
-  abstract handler(ctx: AccountSwitcherContext): Promise<void>;
+  abstract handler(ctx: AccountSwitcherContext, args?: string): Promise<void>;
 }

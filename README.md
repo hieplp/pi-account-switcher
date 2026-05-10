@@ -85,6 +85,8 @@ After installing, reload Pi and add your first account:
 | Command | Description |
 |---|---|
 | `/system:reset` | Delete all accounts, providers, and state |
+| `/system:export` | Export all accounts, providers, and state to a JSON file |
+| `/system:import` | Import accounts, providers, and state from a JSON file |
 
 ---
 
@@ -154,6 +156,26 @@ Custom providers are stored at `~/.pi/account-switcher/providers.json` and suppo
 ```
 
 > Removing a provider is blocked while any account uses it — edit or remove those accounts first.
+
+---
+
+## Export / Import
+
+Back up or migrate your full configuration with two commands:
+
+```
+/system:export          # prompts for a path, defaults to ~/pi-account-switcher-export.json
+/system:export ~/backup.json  # export to a specific path
+```
+
+The export file contains all accounts, providers, and active-selection state as a single JSON bundle. To restore on another machine (or after a reset):
+
+```
+/system:import          # prompts for a path, defaults to ~/pi-account-switcher-export.json
+/system:import ~/backup.json  # import from a specific path
+```
+
+> **Warning:** import replaces all existing data. A confirmation prompt is shown before anything is written.
 
 ---
 

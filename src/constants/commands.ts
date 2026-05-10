@@ -62,5 +62,13 @@ export const COMMANDS = {
       name: "system:reset",
       description: "Reset all extension data (accounts, providers, state) to factory defaults",
     },
+    export: {
+      name: "system:export",
+      description: "Export all extension data (accounts, providers, state) to a JSON file",
+    },
+    import: {
+      name: "system:import",
+      description: "Import extension data (accounts, providers, state) from a JSON file",
+    },
   },
 } as const;
