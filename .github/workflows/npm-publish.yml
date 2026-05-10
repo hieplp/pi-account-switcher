@@ -3,16 +3,6 @@ name: Publish to npm
 on:
   release:
     types: [published]
-  workflow_dispatch:
-    inputs:
-      dry_run:
-        description: "Run checks and pack without publishing"
-        required: true
-        default: "true"
-        type: choice
-        options:
-          - "true"
-          - "false"
 
 permissions:
   contents: read
@@ -43,22 +33,17 @@ jobs:
         run: npm test
 
       - name: Verify package version matches release tag
-        if: github.event_name == 'release'
         shell: bash
+        env:
+          TAG_VERSION: ${{ github.event.release.tag_name }}
         run: |
           PACKAGE_VERSION="v$(node -p "require('./package.json').version")"
-          TAG_VERSION="${{ github.event.release.tag_name }}"
           if [ "$PACKAGE_VERSION" != "$TAG_VERSION" ]; then
             echo "package.json version $PACKAGE_VERSION does not match release tag $TAG_VERSION"
             exit 1
           fi
 
-      - name: Pack dry run
-        if: github.event_name == 'workflow_dispatch' && inputs.dry_run == 'true'
-        run: npm pack --dry-run
-
       - name: Publish to npm
-        if: github.event_name != 'workflow_dispatch' || inputs.dry_run == 'false'
         run: npm publish --access public --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
