@@ -11,9 +11,7 @@ export default async function accountSwitcherBootstrap(pi: ExtensionAPI) {
     },
   });
 
-  const extension = await jiti.import<
-    (pi: ExtensionAPI) => void | Promise<void>
-  >("./index", {
+  const extension = await jiti.import<(pi: ExtensionAPI) => void | Promise<void>>("./index", {
     default: true,
   });
 

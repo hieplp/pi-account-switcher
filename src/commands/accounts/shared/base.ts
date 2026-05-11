@@ -111,7 +111,9 @@ export abstract class AccountCommand extends BaseCommand {
     return { labels, values };
   }
 
-  private formatMultiAccountItem(item: Extract<ReturnType<typeof buildGroupedItems>[number], { type: "account" }>): string {
+  private formatMultiAccountItem(
+    item: Extract<ReturnType<typeof buildGroupedItems>[number], { type: "account" }>,
+  ): string {
     return item.active ? `${item.account.label} (active)` : item.account.label;
   }
 }

@@ -18,7 +18,10 @@ class ListProvidersCommand extends ProviderCommand {
     try {
       const providers = await this.loadProviders(ctx);
       if (!providers) return;
-      await ctx.ui.select("Providers", providers.map((p) => this.format(p)));
+      await ctx.ui.select(
+        "Providers",
+        providers.map((p) => this.format(p)),
+      );
     } catch (e) {
       ctx.ui.notify(`Failed to list providers: ${errorUtil.format(e)}`, "error");
     }

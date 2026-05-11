@@ -20,9 +20,7 @@ export const providerModelSchema = z
       })
       .optional(),
     compat: jsonRecordSchema.optional(),
-    thinkingLevelMap: z
-      .record(z.string(), z.union([z.string(), z.null()]))
-      .optional(),
+    thinkingLevelMap: z.record(z.string(), z.union([z.string(), z.null()])).optional(),
     headers: z.record(z.string(), z.string()).optional(),
   })
   .passthrough();
@@ -42,9 +40,7 @@ export const providerSchema = z
     authHeader: z.boolean().optional(),
     compat: jsonRecordSchema.optional(),
     models: z.array(providerModelSchema).optional(),
-    modelOverrides: z
-      .record(z.string(), providerModelSchema.partial())
-      .optional(),
+    modelOverrides: z.record(z.string(), providerModelSchema.partial()).optional(),
   })
   .passthrough();
 

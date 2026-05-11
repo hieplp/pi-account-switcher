@@ -241,7 +241,7 @@ const PROVIDER_ENV_KEYS = {
   openai: ["OPENAI_API_KEY"],
   google: ["GOOGLE_API_KEY", "GEMINI_API_KEY"],
   xai: ["XAI_API_KEY"],
-  openrouter: ["OPENROUTER_API_KEY"]
+  openrouter: ["OPENROUTER_API_KEY"],
 };
 ```
 

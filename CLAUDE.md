@@ -41,6 +41,7 @@ Storage (src/storage/)  →  JSON files on disk (~/.pi/account-switcher/)
 **Runtime** — `AccountSwitcherRuntime` implements the `AccountSwitcher` interface and is the single facade that commands talk to. It coordinates across services.
 
 **Services** — Three main services, each with a factory function (`useXxxService`):
+
 - `AccountService` — loads/saves accounts, manages active selection, applies env vars.
 - `ProviderService` — loads/saves custom providers, registers them with Pi via `pi.registerProvider()`.
 - `ModelService` — applies model switches via `pi.setModel()`.

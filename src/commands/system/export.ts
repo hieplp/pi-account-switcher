@@ -6,7 +6,6 @@ import type { AccountSwitcherContext } from "@/types";
 import { BaseCommand } from "../base";
 import { errorUtil, fileUtil } from "@/utils";
 
-
 export const useExportCommand = (pi: ExtensionAPI, runtime: AccountSwitcher) => {
   new ExportCommand(pi, runtime).register();
 };

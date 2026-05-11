@@ -64,39 +64,39 @@ The local commands will be registered as `/dev:accounts:list`, `/dev:accounts:ad
 
 ### Accounts
 
-| Command | Description |
-|---|---|
-| `/accounts:add` | Add a new account interactively |
-| `/accounts:list` | List all accounts and activate the selected one |
-| `/accounts:switch` | Switch to another account within the current provider |
-| `/accounts:edit` | Edit label, provider, id, or credential source |
-| `/accounts:remove` | Delete an account |
-| `/accounts:oauth` | Import the current Pi `/login` OAuth session as a named account |
+| Command            | Description                                                     |
+| ------------------ | --------------------------------------------------------------- |
+| `/accounts:add`    | Add a new account interactively                                 |
+| `/accounts:list`   | List all accounts and activate the selected one                 |
+| `/accounts:switch` | Switch to another account within the current provider           |
+| `/accounts:edit`   | Edit label, provider, id, or credential source                  |
+| `/accounts:remove` | Delete an account                                               |
+| `/accounts:oauth`  | Import the current Pi `/login` OAuth session as a named account |
 
 ### Providers
 
-| Command | Description |
-|---|---|
-| `/providers:add` | Add a reusable custom provider |
-| `/providers:list` | List custom providers |
-| `/providers:edit` | Edit a custom provider |
+| Command             | Description                      |
+| ------------------- | -------------------------------- |
+| `/providers:add`    | Add a reusable custom provider   |
+| `/providers:list`   | List custom providers            |
+| `/providers:edit`   | Edit a custom provider           |
 | `/providers:remove` | Remove an unused custom provider |
 
 ### Models
 
-| Command | Description |
-|---|---|
-| `/models:list` | List all available models and switch to the selected one |
-| `/models:add` | Add a custom model config to the current provider |
-| `/models:remove` | Remove a custom model config |
+| Command          | Description                                              |
+| ---------------- | -------------------------------------------------------- |
+| `/models:list`   | List all available models and switch to the selected one |
+| `/models:add`    | Add a custom model config to the current provider        |
+| `/models:remove` | Remove a custom model config                             |
 
 ### System
 
-| Command | Description |
-|---|---|
-| `/system:reset` | Delete all accounts, providers, and state |
+| Command          | Description                                              |
+| ---------------- | -------------------------------------------------------- |
+| `/system:reset`  | Delete all accounts, providers, and state                |
 | `/system:export` | Export all accounts, providers, and state to a JSON file |
-| `/system:import` | Import accounts, providers, and state from a JSON file |
+| `/system:import` | Import accounts, providers, and state from a JSON file   |
 
 ---
 

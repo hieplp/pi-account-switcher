@@ -2,7 +2,7 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { AccountSwitcher } from "@/runtime";
 import type { AccountSwitcherContext } from "@/types";
 import { COMMANDS } from "@/constants";
-import { errorUtil, providerUtil } from "@/utils";
+import { commandUtil, errorUtil, providerUtil } from "@/utils";
 import { AccountCommand } from "./shared";
 
 export const useSwitchAccountCommand = (pi: ExtensionAPI, runtime: AccountSwitcher) => {
@@ -20,7 +20,10 @@ class SwitchAccountCommand extends AccountCommand {
 
       const active = this.runtime.getActiveAccount();
       if (!active) {
-        ctx.ui.notify("No active account. Use accounts:list to activate one first.", "info");
+        ctx.ui.notify(
+          `No active account. Use ${commandUtil.name(COMMANDS.accounts.list.name)} to activate one first.`,
+          "info",
+        );
         return;
       }
 

@@ -72,10 +72,7 @@ class ProviderServiceImpl implements ProviderService {
   registerProvider(provider: ProviderConfig): void {
     const config = this.toPiProvider(provider);
     if (!config) return;
-    this.pi.registerProvider(
-      provider.id,
-      config as Parameters<ExtensionAPI["registerProvider"]>[1],
-    );
+    this.pi.registerProvider(provider.id, config as Parameters<ExtensionAPI["registerProvider"]>[1]);
   }
 
   private toPiProvider(provider: ProviderConfig): Record<string, unknown> | undefined {
@@ -104,10 +101,7 @@ class ProviderServiceImpl implements ProviderService {
     });
   }
 
-  private toPiModel(
-    provider: ProviderConfig,
-    model: ProviderModelConfig,
-  ): Record<string, unknown> | undefined {
+  private toPiModel(provider: ProviderConfig, model: ProviderModelConfig): Record<string, unknown> | undefined {
     return commonUtil.omitUndefined({
       ...model,
       api: model.api ?? provider.api,

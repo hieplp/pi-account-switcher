@@ -44,7 +44,6 @@ export const accountSchema = z
       account.usesProviderApiKey ||
       account.piAuth,
     {
-      message:
-        "Account must define env credentials, providerApiKey, provider apiKey, or piAuth credentials",
+      message: "Account must define env credentials, providerApiKey, provider apiKey, or piAuth credentials",
     },
   );

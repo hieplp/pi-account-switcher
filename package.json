@@ -27,11 +27,13 @@
   ],
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
-    "@mariozechner/jiti": "^2.6.5",
     "@earendil-works/pi-tui": "^0.74.0",
+    "@mariozechner/jiti": "^2.6.5",
     "zod": "^4.4.3"
   },
   "peerDependencies": {
@@ -42,6 +44,7 @@
     "@earendil-works/pi-ai": "latest",
     "@earendil-works/pi-coding-agent": "latest",
     "@types/node": "latest",
+    "prettier": "^3.8.3",
     "typescript": "latest",
     "vitest": "latest"
   },

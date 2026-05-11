@@ -78,8 +78,14 @@ class ImportCommand extends BaseCommand {
 
 function parseImportBundle(raw: unknown): ImportBundle {
   const parsed = exportBundleSchema.parse(raw);
-  assertNoDuplicateIds("account", parsed.accounts.map((account) => account.id));
-  assertNoDuplicateIds("provider", parsed.providers.map((provider) => provider.id));
+  assertNoDuplicateIds(
+    "account",
+    parsed.accounts.map((account) => account.id),
+  );
+  assertNoDuplicateIds(
+    "provider",
+    parsed.providers.map((provider) => provider.id),
+  );
   return parsed;
 }
 
