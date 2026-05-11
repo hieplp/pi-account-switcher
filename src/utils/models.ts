@@ -1,4 +1,4 @@
-import type { Api, Model } from "@mariozechner/pi-ai";
+import type { Api, Model } from "@earendil-works/pi-ai";
 import type { AccountConfig, AccountSwitcherContext, ProviderConfig } from "@/types";
 import { providerUtil } from "./providers";
 import { uiUtil } from "./ui";

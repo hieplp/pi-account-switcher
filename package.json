@@ -1,6 +1,6 @@
 {
   "name": "@hieplp/pi-account-switcher",
-  "version": "0.2.0",
+  "version": "0.2.2",
   "type": "module",
   "description": "Pi extension for quickly switching between multiple accounts/API keys per provider.",
   "license": "MIT",
@@ -31,16 +31,16 @@
   },
   "dependencies": {
     "@mariozechner/jiti": "^2.6.5",
-    "@mariozechner/pi-tui": "^0.73.1",
+    "@earendil-works/pi-tui": "^0.74.0",
     "zod": "^4.4.3"
   },
   "peerDependencies": {
-    "@mariozechner/pi-ai": "*",
-    "@mariozechner/pi-coding-agent": "*"
+    "@earendil-works/pi-ai": "*",
+    "@earendil-works/pi-coding-agent": "*"
   },
   "devDependencies": {
-    "@mariozechner/pi-ai": "latest",
-    "@mariozechner/pi-coding-agent": "latest",
+    "@earendil-works/pi-ai": "latest",
+    "@earendil-works/pi-coding-agent": "latest",
     "@types/node": "latest",
     "typescript": "latest",
     "vitest": "latest"

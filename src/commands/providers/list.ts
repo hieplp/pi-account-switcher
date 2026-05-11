@@ -1,4 +1,4 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { AccountSwitcher } from "@/runtime";
 import { COMMANDS } from "@/constants";
 import { ProviderCommand } from "./shared";

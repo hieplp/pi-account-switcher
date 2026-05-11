@@ -1,4 +1,4 @@
-import type { ExtensionUIContext } from "@mariozechner/pi-coding-agent";
+import type { ExtensionUIContext } from "@earendil-works/pi-coding-agent";
 import type { ProviderModelConfig } from "@/types";
 import { uiUtil } from "@/utils";
 

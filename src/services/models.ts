@@ -1,5 +1,5 @@
-import type { Api, Model } from "@mariozechner/pi-ai";
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { Api, Model } from "@earendil-works/pi-ai";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { AccountSwitcherContext } from "@/types";
 
 type ProviderModel = Model<Api>;

@@ -1,6 +1,6 @@
-import { DynamicBorder } from "@mariozechner/pi-coding-agent";
-import { Container, fuzzyFilter, getKeybindings, Input, Spacer, Text, type Focusable } from "@mariozechner/pi-tui";
-import type { ThemeColor } from "@mariozechner/pi-coding-agent";
+import { DynamicBorder } from "@earendil-works/pi-coding-agent";
+import { Container, fuzzyFilter, getKeybindings, Input, Spacer, Text, type Focusable } from "@earendil-works/pi-tui";
+import type { ThemeColor } from "@earendil-works/pi-coding-agent";
 
 type Theme = { fg: (color: ThemeColor, text: string) => string; bold: (text: string) => string };
 

@@ -1,4 +1,4 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { AccountSwitcher } from "@/runtime";
 import type { AccountConfig, AccountSwitcherContext } from "@/types";
 import { COMMANDS, OAUTH_PROVIDER_IDS, PI_AUTH_PATH } from "@/constants";

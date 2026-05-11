@@ -30,7 +30,7 @@ The extension should make it easy to select the desired account from inside Pi w
 
 ### Runtime Dependencies
 
-- `@mariozechner/pi-coding-agent` — Pi extension types/API
+- `@earendil-works/pi-coding-agent` — Pi extension types/API
 - `typebox` — schema definitions if custom tools are added
 - `zod` or `valibot` — config validation
 - Node built-ins:
@@ -297,7 +297,7 @@ Switched to Claude — Work. If the provider already cached credentials, run /re
   "type": "module",
   "private": true,
   "dependencies": {
-    "@mariozechner/pi-coding-agent": "latest",
+    "@earendil-works/pi-coding-agent": "latest",
     "typebox": "latest",
     "zod": "latest"
   },

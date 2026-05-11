@@ -1,4 +1,4 @@
-import type { ExtensionUIContext } from "@mariozechner/pi-coding-agent";
+import type { ExtensionUIContext } from "@earendil-works/pi-coding-agent";
 import type { ProviderConfig } from "@/types";
 
 export async function selectProvider(

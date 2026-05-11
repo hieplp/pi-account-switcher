@@ -1,4 +1,4 @@
-import type { Api, Model } from "@mariozechner/pi-ai";
+import type { Api, Model } from "@earendil-works/pi-ai";
 import type { AccountConfig, AccountSwitcherContext, PiAuthEntry, ProviderConfig } from "@/types";
 
 export default interface AccountSwitcher {

@@ -19,7 +19,7 @@ pi -e ./src/extension.ts
 
 ## Architecture
 
-This is a **Pi extension** — a plugin for the Pi coding agent (`@mariozechner/pi-coding-agent`) that adds multi-account/API-key management.
+This is a **Pi extension** — a plugin for the Pi coding agent (`@earendil-works/pi-coding-agent`) that adds multi-account/API-key management.
 
 ### Entry Points
 
@@ -48,7 +48,7 @@ Storage (src/storage/)  →  JSON files on disk (~/.pi/account-switcher/)
 
 **Storage** — JSON file stores at `~/.pi/account-switcher/` (`accounts.json`, `providers.json`, `state.json`). Schemas are validated with Zod in `src/schemas/`.
 
-**Commands** — Each command group (`accounts`, `providers`, `models`, `system`) exports a `useXxxCommands(pi, runtime)` factory. Individual commands extend `BaseCommand`, which wraps `pi.registerCommand()` and provides `pick()` / `pickGrouped()` helpers backed by `@mariozechner/pi-tui`.
+**Commands** — Each command group (`accounts`, `providers`, `models`, `system`) exports a `useXxxCommands(pi, runtime)` factory. Individual commands extend `BaseCommand`, which wraps `pi.registerCommand()` and provides `pick()` / `pickGrouped()` helpers backed by `@earendil-works/pi-tui`.
 
 ### Path Alias
 

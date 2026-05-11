@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import z from "zod";
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { AccountSwitcher } from "@/runtime";
 import { ACCOUNTS_PATH, COMMANDS, DEFAULT_EXPORT_PATH, PROVIDERS_PATH, STATE_PATH } from "@/constants";
 import { accountSchema, providerSchema } from "@/schemas";

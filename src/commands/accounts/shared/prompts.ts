@@ -1,4 +1,4 @@
-import type { ExtensionUIContext } from "@mariozechner/pi-coding-agent";
+import type { ExtensionUIContext } from "@earendil-works/pi-coding-agent";
 import type { AccountConfig, ProviderConfig, SecretSource } from "@/types";
 import { commonUtil, providerUtil, uiUtil } from "@/utils";
 import { ACCOUNTS_PATH } from "@/constants";

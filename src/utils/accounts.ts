@@ -1,6 +1,6 @@
-import * as piAi from "@mariozechner/pi-ai";
+import * as piAi from "@earendil-works/pi-ai";
 import { readFile } from "node:fs/promises";
-import type { ModelRegistry } from "@mariozechner/pi-coding-agent";
+import type { ModelRegistry } from "@earendil-works/pi-coding-agent";
 import type { AccountConfig, SecretSource } from "@/types";
 import { commonUtil } from "./common";
 import { fileUtil } from "./files";

@@ -1,7 +1,7 @@
 import AccountSwitcher from "./account-switcher";
 import { ACCOUNTS_PATH, PROVIDERS_PATH, STATE_PATH } from "@/constants";
-import type { Api, Model } from "@mariozechner/pi-ai";
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { Api, Model } from "@earendil-works/pi-ai";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { AccountConfig, AccountSwitcherContext, PiAuthEntry, ProviderConfig } from "@/types";
 import type { AccountService, ModelService, PiAuthService, ProviderService } from "@/services";
 import { useAccountService, useModelService, usePiAuthService, useProviderService } from "@/services";

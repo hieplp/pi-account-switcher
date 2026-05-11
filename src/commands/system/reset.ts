@@ -1,5 +1,5 @@
 import { rm } from "node:fs/promises";
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { AccountSwitcher } from "@/runtime";
 import { ACCOUNTS_PATH, COMMANDS, PROVIDERS_PATH, STATE_PATH } from "@/constants";
 import type { AccountSwitcherContext } from "@/types";

@@ -1,5 +1,5 @@
 import { createJiti } from "@mariozechner/jiti";
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 

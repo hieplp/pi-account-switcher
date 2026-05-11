@@ -1,5 +1,5 @@
-import { completeSimple, type Api, type Model } from "@mariozechner/pi-ai";
-import type { AuthCredential, ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import { completeSimple, type Api, type Model } from "@earendil-works/pi-ai";
+import type { AuthCredential, ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { AccountSwitcher } from "@/runtime";
 import type { AccountConfig, AccountSwitcherContext, ProviderConfig, SecretSource } from "@/types";
 import { COMMANDS } from "@/constants";
