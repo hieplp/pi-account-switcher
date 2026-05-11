@@ -1,11 +1,11 @@
 import type { Api, Model } from "@earendil-works/pi-ai";
-import type { AccountConfig, AccountSwitcherContext, PiAuthEntry, ProviderConfig } from "@/types";
+import type { AccountConfig, AccountSwitcherContext, PiAuthEntry, ProjectBinding, ProviderConfig } from "@/types";
 
 export default interface AccountSwitcher {
   // Core
   init(ctx: AccountSwitcherContext): Promise<void>;
   load(): Promise<void>;
-  onModelSelect(provider: string, ctx: AccountSwitcherContext): Promise<void>;
+  onModelSelect(model: Model<Api>, ctx: AccountSwitcherContext): Promise<void>;
 
   // Pi Auth
   getPiAuthEntry(provider: string): Promise<PiAuthEntry | undefined>;
@@ -19,7 +19,23 @@ export default interface AccountSwitcher {
   addAccount(account: AccountConfig): Promise<void>;
   editAccount(original: AccountConfig, updated: AccountConfig): Promise<void>;
   removeAccount(account: AccountConfig): Promise<void>;
-  activateAccount(account: AccountConfig, ctx: AccountSwitcherContext): Promise<string>;
+  activateAccount(
+    account: AccountConfig,
+    ctx: AccountSwitcherContext,
+    options?: { pickModel?: boolean },
+  ): Promise<string>;
+
+  // Project
+  getProjects(): ProjectBinding[];
+  bindProject(input: {
+    path: string;
+    accountId: string;
+    modelId?: string;
+    modelProvider?: string;
+    enabled?: boolean;
+  }): Promise<ProjectBinding>;
+  removeProject(path: string): Promise<void>;
+  activateProject(project: ProjectBinding, ctx: AccountSwitcherContext): Promise<void>;
 
   // Model
   applyModel(model: Model<Api>, ctx: AccountSwitcherContext): Promise<void>;

@@ -12,6 +12,7 @@ describe("COMMANDS", () => {
       ...Object.values(COMMANDS.accounts),
       ...Object.values(COMMANDS.providers),
       ...Object.values(COMMANDS.models),
+      ...Object.values(COMMANDS.projects),
       ...Object.values(COMMANDS.system),
     ];
 

@@ -48,6 +48,24 @@ export const COMMANDS = {
       description: "Remove a configured custom provider",
     },
   },
+  projects: {
+    bind: {
+      name: "projects:bind",
+      description: "Bind the current project to the active account and model",
+    },
+    list: {
+      name: "projects:list",
+      description: "List project bindings and activate the selected project account/model",
+    },
+    unbind: {
+      name: "projects:unbind",
+      description: "Remove the binding for the current project",
+    },
+    remove: {
+      name: "projects:remove",
+      description: "Remove a saved project binding",
+    },
+  },
   models: {
     list: {
       name: "models:list",
@@ -65,15 +83,15 @@ export const COMMANDS = {
   system: {
     reset: {
       name: "system:reset",
-      description: "Reset all extension data (accounts, providers, state) to factory defaults",
+      description: "Reset all extension data (accounts, providers, project bindings, state) to factory defaults",
     },
     export: {
       name: "system:export",
-      description: "Export all extension data (accounts, providers, state) to a JSON file",
+      description: "Export selected extension data (accounts, providers, project bindings, state) to a JSON file",
     },
     import: {
       name: "system:import",
-      description: "Import extension data (accounts, providers, state) from a JSON file",
+      description: "Import selected extension data (accounts, providers, project bindings, state) from a JSON file",
     },
   },
 } as const;

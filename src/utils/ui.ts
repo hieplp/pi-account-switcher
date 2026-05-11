@@ -47,7 +47,7 @@ export const uiUtil = {
     );
   },
 
-  /** Show a checkbox-style multi-select component. */
+  /** Show a checkbox-style multi-select using the custom checklist component. */
   multiSelect: (
     ui: ExtensionUIContext,
     title: string,

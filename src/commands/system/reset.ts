@@ -1,7 +1,7 @@
 import { rm } from "node:fs/promises";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { AccountSwitcher } from "@/runtime";
-import { ACCOUNTS_PATH, COMMANDS, PROVIDERS_PATH, STATE_PATH } from "@/constants";
+import { ACCOUNTS_PATH, COMMANDS, PROJECTS_PATH, PROVIDERS_PATH, STATE_PATH } from "@/constants";
 import type { AccountSwitcherContext } from "@/types";
 import { BaseCommand } from "../base";
 import { errorUtil, uiUtil } from "@/utils";
@@ -19,11 +19,13 @@ class ResetCommand extends BaseCommand {
     try {
       const confirmed = await ctx.ui.confirm(
         "Reset all extension data?",
-        "This will permanently delete all accounts, providers, and state. This cannot be undone.",
+        "This will permanently delete all accounts, providers, project bindings, and state. This cannot be undone.",
       );
       if (!confirmed) return;
 
-      await Promise.all([ACCOUNTS_PATH, PROVIDERS_PATH, STATE_PATH].map((path) => rm(path, { force: true })));
+      await Promise.all(
+        [ACCOUNTS_PATH, PROVIDERS_PATH, PROJECTS_PATH, STATE_PATH].map((path) => rm(path, { force: true })),
+      );
 
       await this.runtime.load();
       uiUtil.setAccountStatus(ctx.ui, undefined);

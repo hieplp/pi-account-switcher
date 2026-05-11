@@ -4,19 +4,11 @@ import type { ThemeColor } from "@earendil-works/pi-coding-agent";
 
 type Theme = { fg: (color: ThemeColor, text: string) => string; bold: (text: string) => string };
 
-export class FilterableMultiSelectComponent extends Container implements Focusable {
+export class FilterableMultiSelectComponent extends Container {
   private readonly listContainer: Container;
   private readonly theme: Theme;
   private selectedIndex = 0;
   private checked: boolean[];
-
-  _focused = false;
-  get focused() {
-    return this._focused;
-  }
-  set focused(value: boolean) {
-    this._focused = value;
-  }
 
   constructor(
     title: string,
@@ -51,7 +43,7 @@ export class FilterableMultiSelectComponent extends Container implements Focusab
           "  " +
           hint("Space", "toggle") +
           "  " +
-          hint("Enter", "run") +
+          hint("Enter", "done") +
           "  " +
           hint("Esc", "cancel"),
         1,

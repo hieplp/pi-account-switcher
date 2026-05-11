@@ -1,10 +1,16 @@
 import AccountSwitcher from "./account-switcher";
-import { ACCOUNTS_PATH, PROVIDERS_PATH, STATE_PATH } from "@/constants";
+import { ACCOUNTS_PATH, PROJECTS_PATH, PROVIDERS_PATH, STATE_PATH } from "@/constants";
 import type { Api, Model } from "@earendil-works/pi-ai";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import type { AccountConfig, AccountSwitcherContext, PiAuthEntry, ProviderConfig } from "@/types";
-import type { AccountService, ModelService, PiAuthService, ProviderService } from "@/services";
-import { useAccountService, useModelService, usePiAuthService, useProviderService } from "@/services";
+import type { AccountConfig, AccountSwitcherContext, PiAuthEntry, ProjectBinding, ProviderConfig } from "@/types";
+import type { AccountService, ModelService, PiAuthService, ProjectService, ProviderService } from "@/services";
+import {
+  useAccountService,
+  useModelService,
+  usePiAuthService,
+  useProjectService,
+  useProviderService,
+} from "@/services";
 import { accountUtil, modelUtil, providerUtil, uiUtil } from "@/utils";
 
 function resolveAuthProvider(account: AccountConfig, providers: ProviderConfig[]): string {
@@ -17,6 +23,7 @@ export default class AccountSwitcherRuntime implements AccountSwitcher {
   private accountService: AccountService;
   private modelService: ModelService;
   private piAuthService: PiAuthService;
+  private projectService: ProjectService;
   private providerService: ProviderService;
 
   constructor(private readonly pi: Pick<ExtensionAPI, "registerProvider" | "setModel">) {
@@ -24,6 +31,7 @@ export default class AccountSwitcherRuntime implements AccountSwitcher {
     this.accountService = useAccountService(ACCOUNTS_PATH, STATE_PATH);
     this.modelService = useModelService(this.pi);
     this.piAuthService = usePiAuthService();
+    this.projectService = useProjectService(PROJECTS_PATH);
   }
 
   // ===============================================================================================
@@ -32,6 +40,19 @@ export default class AccountSwitcherRuntime implements AccountSwitcher {
 
   async init(ctx: AccountSwitcherContext): Promise<void> {
     await this.load();
+
+    const project = this.projectService.findProjectForPath(process.cwd());
+    if (project) {
+      try {
+        await this.activateProject(project, ctx);
+        return;
+      } catch (error) {
+        ctx.ui.notify(
+          `Failed to auto-switch project account: ${error instanceof Error ? error.message : error}`,
+          "warning",
+        );
+      }
+    }
 
     const active = this.accountService.getActiveAccount();
     uiUtil.setAccountStatus(ctx.ui, active?.label);
@@ -57,14 +78,18 @@ export default class AccountSwitcherRuntime implements AccountSwitcher {
   async load(): Promise<void> {
     await this.accountService.load();
     await this.providerService.load();
+    await this.projectService.load();
   }
 
-  async onModelSelect(provider: string, ctx: AccountSwitcherContext): Promise<void> {
-    const matchingAccount = this.findAccountsByProvider(provider)[0];
-    const activeAccount = this.accountService.getActiveAccount();
+  async onModelSelect(model: Model<Api>, ctx: AccountSwitcherContext): Promise<void> {
+    const matchingAccount = this.findAccountsByProvider(model.provider)[0];
+    let activeAccount = this.accountService.getActiveAccount();
     if (matchingAccount && matchingAccount.id !== activeAccount?.id) {
       await this.activateAccount(matchingAccount, ctx);
+      activeAccount = matchingAccount;
     }
+
+    await this.updateCurrentProjectModel(model, activeAccount);
   }
 
   // ===============================================================================================
@@ -116,7 +141,11 @@ export default class AccountSwitcherRuntime implements AccountSwitcher {
     return this.accountService.removeAccount(account);
   }
 
-  async activateAccount(account: AccountConfig, ctx: AccountSwitcherContext): Promise<string> {
+  async activateAccount(
+    account: AccountConfig,
+    ctx: AccountSwitcherContext,
+    options: { pickModel?: boolean } = {},
+  ): Promise<string> {
     const providers = this.providerService.getProviders();
     const providerApiKey = await this.applyProviderApiKey(account, providers);
     const result = await this.accountService.activateAccount(account, ctx, resolveAuthProvider(account, providers));
@@ -132,12 +161,67 @@ export default class AccountSwitcherRuntime implements AccountSwitcher {
       : undefined;
 
     // Skip model selection if the active model already belongs to the same provider.
-    if (accountProvider !== currentProvider) {
+    if (options.pickModel !== false && accountProvider !== currentProvider) {
       const model = await modelUtil.pickModel(ctx, account, providers);
       if (model) await this.applyModel(model, ctx);
     }
 
     return providerApiKey ? `provider apiKey (${providerApiKey})` : result;
+  }
+
+  // ===============================================================================================
+  // Project
+  // ===============================================================================================
+
+  getProjects(): ProjectBinding[] {
+    return this.projectService.getProjects();
+  }
+
+  async bindProject(input: {
+    path: string;
+    accountId: string;
+    modelId?: string;
+    modelProvider?: string;
+    enabled?: boolean;
+  }): Promise<ProjectBinding> {
+    if (!this.findAccountById(input.accountId)) throw new Error(`Account not found: ${input.accountId}`);
+    return this.projectService.bindProject(input);
+  }
+
+  async removeProject(path: string): Promise<void> {
+    return this.projectService.removeProject(path);
+  }
+
+  async activateProject(project: ProjectBinding, ctx: AccountSwitcherContext): Promise<void> {
+    const account = this.findAccountById(project.accountId);
+    if (!account) throw new Error(`Project account not found: ${project.accountId}`);
+
+    await this.activateAccount(account, ctx, { pickModel: false });
+
+    if (project.modelId && project.modelProvider) {
+      const model = ctx.modelRegistry.find(project.modelProvider, project.modelId);
+      if (model) await this.applyModel(model, ctx);
+    }
+  }
+
+  private async updateCurrentProjectModel(model: Model<Api>, activeAccount: AccountConfig | undefined): Promise<void> {
+    const project = this.projectService.findProjectForPath(process.cwd());
+    if (!project || !activeAccount) return;
+    if (
+      project.accountId === activeAccount.id &&
+      project.modelId === model.id &&
+      project.modelProvider === model.provider
+    ) {
+      return;
+    }
+
+    await this.projectService.bindProject({
+      path: project.path,
+      accountId: activeAccount.id,
+      modelId: model.id,
+      modelProvider: model.provider,
+      enabled: project.enabled ?? true,
+    });
   }
 
   private async applyProviderApiKey(account: AccountConfig, providers: ProviderConfig[]): Promise<string | undefined> {

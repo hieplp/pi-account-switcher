@@ -11,7 +11,7 @@ async function accountSwitcher(pi: ExtensionAPI) {
   });
 
   pi.on("model_select", async (event, ctx) => {
-    await runtime.onModelSelect(event.model.provider, ctx as AccountSwitcherContext);
+    await runtime.onModelSelect(event.model, ctx as AccountSwitcherContext);
   });
 
   registerAllCommands(pi, runtime);
