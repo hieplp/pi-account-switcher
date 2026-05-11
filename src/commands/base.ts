@@ -1,7 +1,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { AccountSwitcher } from "@/runtime";
 import type { AccountConfig, AccountSwitcherContext, ProviderConfig } from "@/types";
-import { providerUtil, uiUtil } from "@/utils";
+import { commandUtil, providerUtil, uiUtil } from "@/utils";
 
 function deduplicateLabels(labels: string[]): string[] {
   const seen = new Map<string, number>();
@@ -31,7 +31,7 @@ export abstract class BaseCommand implements Command {
     protected readonly runtime: AccountSwitcher,
     meta: CommandMeta,
   ) {
-    this.name = meta.name;
+    this.name = commandUtil.name(meta.name);
     this.description = meta.description;
   }
 

@@ -48,6 +48,16 @@ After installing, reload Pi and add your first account:
 /accounts:add
 ```
 
+### Local development command prefix
+
+If you have the npm package installed and also run a local checkout, set `PI_ACCOUNT_SWITCHER_COMMAND_PREFIX` before launching Pi to avoid command-name collisions:
+
+```bash
+PI_ACCOUNT_SWITCHER_COMMAND_PREFIX=dev pi -e ./src/extension.ts
+```
+
+The local commands will be registered as `/dev:accounts:list`, `/dev:accounts:add`, etc. The prefix may include the trailing colon (`dev:`) or omit it (`dev`).
+
 ---
 
 ## Commands
