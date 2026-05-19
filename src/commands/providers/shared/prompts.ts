@@ -48,22 +48,22 @@ export class ProviderConfigBuilder {
 
   async withId(): Promise<this> {
     const raw = await this.prompt("Provider id", this.defaults.id).asText();
-    if (!raw) throw new Error("Provider id is required");
-    this.config.id = providerUtil.normalizeProvider(raw);
+    this.config.id = providerUtil.normalizeProvider(raw || this.defaults.id);
+    if (!this.config.id) throw new Error("Provider id is required");
     return this;
   }
 
   async withLabel(): Promise<this> {
     const id = this.config.id ?? "";
-    this.config.label = await this.prompt("Provider label", this.defaults.label ?? id).asText();
+    const hint = this.defaults.label ?? id;
+    this.config.label = (await this.prompt("Provider label", hint).asText()) ?? hint;
     return this;
   }
 
   async withBaseUrl(): Promise<this> {
-    this.config.baseUrl = await this.prompt(
-      "Base URL (blank for account-only provider)",
-      this.defaults.baseUrl,
-    ).asText();
+    this.config.baseUrl =
+      (await this.prompt("Base URL (blank for account-only provider)", this.defaults.baseUrl).asText()) ??
+      this.defaults.baseUrl;
     return this;
   }
 
@@ -78,26 +78,23 @@ export class ProviderConfigBuilder {
 
   async withApiKey(): Promise<this> {
     const id = this.config.id ?? "";
-    this.config.apiKey = await this.prompt(
-      "Pi apiKey env var/name or raw key",
-      this.defaults.apiKey ?? `${id.toUpperCase().replace(/[^A-Z0-9]/g, "_")}_API_KEY`,
-    ).asText();
+    const hint = this.defaults.apiKey ?? `${id.toUpperCase().replace(/[^A-Z0-9]/g, "_")}_API_KEY`;
+    this.config.apiKey =
+      (await this.prompt("Pi apiKey env var/name or raw key", hint).asText()) ?? this.defaults.apiKey;
     return this;
   }
 
   async withEnvKeys(): Promise<this> {
     const { apiKey } = this.config;
-    this.config.envKeys = await this.prompt(
-      "Env key suggestions (comma-separated)",
-      (this.defaults.envKeys ?? (apiKey ? [apiKey] : [DEFAULTS.envKey])).join(", "),
-    ).asCsv();
+    const defaultKeys = this.defaults.envKeys ?? (apiKey ? [apiKey] : [DEFAULTS.envKey]);
+    const csv = await this.prompt("Env key suggestions (comma-separated)", defaultKeys.join(", ")).asCsv();
+    this.config.envKeys = csv.length > 0 ? csv : defaultKeys;
     return this;
   }
 
   async withAliases(): Promise<this> {
-    this.config.aliases = (
-      await this.prompt("Aliases (comma-separated, optional)", this.defaults.aliases.join(", ")).asCsv()
-    ).map(providerUtil.normalizeProvider);
+    const csv = await this.prompt("Aliases (comma-separated, optional)", this.defaults.aliases.join(", ")).asCsv();
+    this.config.aliases = csv.length > 0 ? csv.map(providerUtil.normalizeProvider) : this.defaults.aliases;
     return this;
   }
 
@@ -109,15 +106,16 @@ export class ProviderConfigBuilder {
     if (rawModels?.some((item) => typeof item !== "object" || item === null || Array.isArray(item))) {
       throw new Error("models must be an array of objects");
     }
-    this.config.models = rawModels as ProviderConfig["models"];
+    this.config.models = (rawModels as ProviderConfig["models"]) ?? this.defaults.models;
     return this;
   }
 
   async withCompat(): Promise<this> {
-    this.config.compat = await this.prompt(
-      "Compat JSON object (optional)",
-      this.defaults.compat ? JSON.stringify(this.defaults.compat) : "",
-    ).asJsonRecord("compat");
+    this.config.compat =
+      (await this.prompt(
+        "Compat JSON object (optional)",
+        this.defaults.compat ? JSON.stringify(this.defaults.compat) : "",
+      ).asJsonRecord("compat")) ?? this.defaults.compat;
     return this;
   }
 
@@ -127,7 +125,8 @@ export class ProviderConfigBuilder {
       "Configure Pi OAuth provider id?",
       "Only choose yes if this provider maps to a Pi /login auth entry.",
     ))
-      ? await this.prompt("Pi auth provider id", this.defaults.piAuthProvider ?? id).asText()
+      ? ((await this.prompt("Pi auth provider id", this.defaults.piAuthProvider ?? id).asText()) ??
+        this.defaults.piAuthProvider)
       : this.defaults.piAuthProvider;
     return this;
   }

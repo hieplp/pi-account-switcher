@@ -37,12 +37,14 @@ export class AccountConfigBuilder {
   }
 
   async withProvider(): Promise<this> {
-    const choice = await uiUtil.filteredSelect(this.ui, "Provider", providerUtil.providerChoices(this.customProviders));
+    const choices = providerUtil.providerChoices(this.customProviders);
+    const choice = await uiUtil.filteredSelect(this.ui, "Provider", choices);
     if (!choice) return this;
 
     const raw = choice === "custom" ? await this.prompt("Custom provider", "provider-id").asText() : choice;
     const provider = providerUtil.normalizeProvider(raw ?? "");
-    if (!provider) throw new Error("Provider is required");
+    // If provider is empty (user cancelled), return early. collect() will detect missing provider and return undefined.
+    if (!provider) return this;
 
     this.config.provider = provider;
     this.customProvider = providerUtil.findProvider(provider, this.customProviders);
@@ -101,21 +103,32 @@ export class AccountConfigBuilder {
     const { provider } = this.config;
     if (!provider) return this;
 
+    const hasExistingCredentials =
+      !!this.config.env || !!this.config.providerApiKey || !!this.config.usesProviderApiKey || !!this.config.piAuth;
+
     if (this.customProvider) {
       const apiKey = await this.promptForCustomProviderApiKey(this.customProvider);
-      if (apiKey || this.customProvider.apiKey) {
-        if (apiKey) {
-          this.config.providerApiKey = apiKey;
-        } else {
-          this.config.usesProviderApiKey = true;
-        }
+      if (apiKey) {
+        this.config.providerApiKey = apiKey;
         return this;
+      }
+      if (!hasExistingCredentials) {
+        if (this.customProvider.apiKey) {
+          this.config.usesProviderApiKey = true;
+          return this;
+        }
+      } else {
+        // Has existing credentials — fall through to let user choose "keep current" or update
       }
     }
 
     const envKeys = providerUtil.requiredEnvKeysForProvider(provider, this.customProviders);
-    const envChoice = await this.ui.select("Credential env var", [...envKeys, "custom"]);
-    if (!envChoice) return this;
+    const envChoice = await this.ui.select("Credential env var", [
+      ...envKeys,
+      "custom",
+      ...(hasExistingCredentials ? ["keep current"] : []),
+    ]);
+    if (!envChoice || envChoice === "keep current") return this;
 
     const envName = envChoice === "custom" ? await this.prompt("Env var name", "PROVIDER_API_KEY").asText() : envChoice;
     if (!envName) throw new Error("Env var name is required");
@@ -150,7 +163,12 @@ export class AccountConfigBuilder {
     };
   }
 
-  async collect(): Promise<AccountConfig | undefined> {
+  /**
+   * Collect account configuration interactively.
+   * @param isEdit - When true, allows keeping existing credentials without re-entering them.
+   *                 Empty input for most fields will preserve the current value.
+   */
+  async collect(isEdit = false): Promise<AccountConfig | undefined> {
     await this.withProvider();
     if (!this.config.provider) return undefined;
 
@@ -159,7 +177,13 @@ export class AccountConfigBuilder {
     await this.withModel();
     await this.withCredentials();
 
-    if (!this.config.env && !this.config.providerApiKey && !this.config.usesProviderApiKey && !this.config.piAuth) {
+    if (
+      !isEdit &&
+      !this.config.env &&
+      !this.config.providerApiKey &&
+      !this.config.usesProviderApiKey &&
+      !this.config.piAuth
+    ) {
       this.ui.notify("No credentials configured. Account not saved.", "info");
       return undefined;
     }

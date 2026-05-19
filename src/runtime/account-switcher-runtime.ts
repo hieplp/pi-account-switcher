@@ -13,6 +13,10 @@ function resolveAuthProvider(account: AccountConfig, providers: ProviderConfig[]
   return provider?.piAuthProvider ?? providerUtil.normalizeProvider(account.provider);
 }
 
+function resolveAccountProvider(account: AccountConfig, providers: ProviderConfig[]): string {
+  return providerUtil.normalizeProviderWithCustom(resolveAuthProvider(account, providers), providers);
+}
+
 export default class AccountSwitcherRuntime implements AccountSwitcher {
   private accountService: AccountService;
   private modelService: ModelService;
@@ -49,8 +53,16 @@ export default class AccountSwitcherRuntime implements AccountSwitcher {
     // leave Pi's default model selection untouched.
     const modelState = this.accountService.getActiveModelState();
     if (modelState) {
-      const model = ctx.modelRegistry.find(modelState.provider, modelState.id);
-      if (model) await this.modelService.applyModel(model, ctx);
+      const providers = this.providerService.getProviders();
+      const activeProvider = active ? resolveAccountProvider(active, providers) : undefined;
+      const savedProvider = providerUtil.normalizeProviderWithCustom(modelState.provider, providers);
+
+      // Only restore a saved model when it belongs to the active account's provider.
+      // Otherwise Pi can start with credentials for one provider and a model from another.
+      if (!activeProvider || savedProvider === activeProvider) {
+        const model = ctx.modelRegistry.find(modelState.provider, modelState.id);
+        if (model) await this.modelService.applyModel(model, ctx);
+      }
     }
   }
 
@@ -94,10 +106,7 @@ export default class AccountSwitcherRuntime implements AccountSwitcher {
   findAccountsByProvider(provider: string): AccountConfig[] {
     const providers = this.providerService.getProviders();
     const normalized = providerUtil.normalizeProviderWithCustom(provider, providers);
-    return this.accountService.getAccounts().filter((a) => {
-      const accountProvider = providerUtil.normalizeProviderWithCustom(resolveAuthProvider(a, providers), providers);
-      return accountProvider === normalized;
-    });
+    return this.accountService.getAccounts().filter((a) => resolveAccountProvider(a, providers) === normalized);
   }
 
   getActiveAccount(): AccountConfig | undefined {
@@ -123,17 +132,14 @@ export default class AccountSwitcherRuntime implements AccountSwitcher {
 
     // piAuth accounts authenticate via a separate provider (e.g. github-copilot),
     // so use that for model lookup rather than the account's own provider field.
-    const accountProvider = providerUtil.normalizeProviderWithCustom(
-      resolveAuthProvider(account, providers),
-      providers,
-    );
+    const accountProvider = resolveAccountProvider(account, providers);
     const currentProvider = ctx.model
       ? providerUtil.normalizeProviderWithCustom(ctx.model.provider, providers)
       : undefined;
 
     // Skip model selection if the active model already belongs to the same provider.
     if (accountProvider !== currentProvider) {
-      const model = await modelUtil.pickModel(ctx, account, providers);
+      const model = await modelUtil.pickModel(ctx, account, providers, accountProvider);
       if (model) await this.applyModel(model, ctx);
     }
 

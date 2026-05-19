@@ -73,8 +73,14 @@ export abstract class BaseCommand implements Command {
     return providerUtil.normalizeProvider(active?.provider ?? "") === provider.id;
   }
 
-  protected isActiveModel(ctx: AccountSwitcherContext, modelId: string): boolean {
-    return ctx.model?.id === modelId;
+  protected isActiveModel(ctx: AccountSwitcherContext, modelId: string, provider?: string): boolean {
+    if (ctx.model?.id !== modelId) return false;
+    if (!provider) return true;
+    const providers = this.runtime.getProviders();
+    return (
+      providerUtil.normalizeProviderWithCustom(ctx.model.provider, providers) ===
+      providerUtil.normalizeProviderWithCustom(provider, providers)
+    );
   }
 
   abstract handler(ctx: AccountSwitcherContext, args?: string): Promise<void>;

@@ -19,7 +19,7 @@ class EditAccountCommand extends AccountCommand {
       const original = await this.loadAndSelectAccount(ctx, "Select account to edit");
       if (!original) return;
 
-      const updated = await new AccountConfigBuilder(ctx.ui, this.runtime.getProviders(), original).collect();
+      const updated = await new AccountConfigBuilder(ctx.ui, this.runtime.getProviders(), original).collect(true);
       if (!updated) return;
 
       await this.runtime.editAccount(original, updated);

@@ -13,13 +13,17 @@ export abstract class ModelCommand extends BaseCommand {
   protected async loadProvider(ctx: AccountSwitcherContext): Promise<ProviderConfig | undefined> {
     await this.runtime.load();
 
-    const provider = ctx.model?.provider;
+    // Prefer the active account's provider so that switching to an account whose
+    // provider has no models yet still targets the correct (new) provider.
+    const activeAccount = this.runtime.getActiveAccount();
+    const providers = this.runtime.getProviders();
+    const provider = activeAccount?.provider ?? ctx.model?.provider;
     if (!provider) {
       ctx.ui.notify("No active model. Use models:list to select one first.", "info");
       return undefined;
     }
 
-    const config = providerUtil.findProvider(provider, this.runtime.getProviders());
+    const config = providerUtil.findProvider(provider, providers);
     if (!config) {
       ctx.ui.notify(`"${provider}" is a built-in provider. This command only works with custom providers.`, "info");
       return undefined;

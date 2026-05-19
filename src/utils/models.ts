@@ -10,8 +10,10 @@ export const modelUtil = {
     ctx: AccountSwitcherContext,
     account: AccountConfig,
     providers: ProviderConfig[],
+    resolvedProvider?: string,
   ): Promise<ProviderModel | undefined> => {
-    const accountProvider = normalizeProvider(account.piAuth?.provider ?? account.provider, providers);
+    const accountProvider =
+      resolvedProvider ?? normalizeProvider(account.piAuth?.provider ?? account.provider, providers);
     const candidates = getProviderModels(ctx, providers, accountProvider);
 
     if (candidates.length === 0) {

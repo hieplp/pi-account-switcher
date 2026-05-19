@@ -19,7 +19,7 @@ class RemoveModelCommand extends ModelCommand {
       const providerConfig = await this.loadProvider(ctx);
       if (!providerConfig) return;
 
-      const removable = (providerConfig.models ?? []).filter((m) => !this.isActiveModel(ctx, m.id));
+      const removable = (providerConfig.models ?? []).filter((m) => !this.isActiveModel(ctx, m.id, providerConfig.id));
       if (removable.length === 0) {
         ctx.ui.notify(`Provider "${providerConfig.id}" has no removable model configs.`, "info");
         return;
