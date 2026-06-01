@@ -1,4 +1,3 @@
-import * as piAi from "@earendil-works/pi-ai";
 import { readFile } from "node:fs/promises";
 import type { ModelRegistry } from "@earendil-works/pi-coding-agent";
 import type { AccountConfig, SecretSource } from "@/types";
@@ -90,10 +89,18 @@ export const accountUtil = {
 };
 
 function closeCachedSessions(): void {
-  const helpers = piAi as {
-    cleanupSessionResources?: () => void;
-    closeOpenAICodexWebSocketSessions?: () => void;
-  };
-  helpers.cleanupSessionResources?.();
-  helpers.closeOpenAICodexWebSocketSessions?.();
+  // Dynamic import so the module is not required at load time — @earendil-works/pi-ai
+  // is a peerDependency provided by the pi agent host, not bundled with this package.
+  import("@earendil-works/pi-ai")
+    .then((piAi) => {
+      const helpers = piAi as {
+        cleanupSessionResources?: () => void;
+        closeOpenAICodexWebSocketSessions?: () => void;
+      };
+      helpers.cleanupSessionResources?.();
+      helpers.closeOpenAICodexWebSocketSessions?.();
+    })
+    .catch(() => {
+      // pi-ai not available in this environment — skip session cleanup
+    });
 }
