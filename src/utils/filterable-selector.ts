@@ -1,6 +1,21 @@
-import { DynamicBorder } from "@earendil-works/pi-coding-agent";
-import { Container, fuzzyFilter, getKeybindings, Input, Spacer, Text, type Focusable } from "@earendil-works/pi-tui";
+import { Container, fuzzyFilter, getKeybindings, Input, Spacer, Text, type Focusable, type Component } from "@earendil-works/pi-tui";
 import type { ThemeColor } from "@earendil-works/pi-coding-agent";
+
+/**
+ * Local implementation of DynamicBorder to avoid a hard runtime dependency
+ * on @earendil-works/pi-coding-agent (which is a peer dep not available in
+ * the pi agent's npm node_modules at extension load time).
+ */
+class DynamicBorder implements Component {
+  private color: (str: string) => string;
+  constructor(color: (str: string) => string = (str) => str) {
+    this.color = color;
+  }
+  invalidate() {}
+  render(width: number): string[] {
+    return [this.color("─".repeat(Math.max(1, width)))];
+  }
+}
 
 type Theme = { fg: (color: ThemeColor, text: string) => string; bold: (text: string) => string };
 
