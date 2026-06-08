@@ -88,6 +88,56 @@ export const accountUtil = {
   },
 };
 
+function normalizeDir(dir: string): string {
+  return dir.replace(/\/$/, "");
+}
+
+/**
+ * Check if an account has a specific directory.
+ * Normalizes trailing slashes before comparison.
+ */
+export function hasDir<T extends { dirs?: string[] }>(account: T, dir: string): boolean {
+  const dirs = account.dirs;
+  if (!dirs || dirs.length === 0) return false;
+  const normalized = normalizeDir(dir);
+  return dirs.some((d) => normalizeDir(d) === normalized);
+}
+
+/**
+ * Add a directory to an account.
+ * Returns a new AccountConfig with the dir added, or null if the dir already exists.
+ * Dirs are kept sorted for consistent display.
+ */
+export function addDirToAccount<T extends { id: string; label: string; provider: string; dirs?: string[] }>(
+  account: T,
+  dir: string,
+): T | null {
+  if (hasDir(account, dir)) return null;
+
+  const existing = account.dirs ?? [];
+  const newDirs = [...existing, dir].sort();
+  return { ...account, dirs: newDirs };
+}
+
+/**
+ * Remove a directory from an account.
+ * Returns a new AccountConfig with the dir removed, or null if the dir does not exist.
+ */
+export function removeDirFromAccount<T extends { id: string; label: string; provider: string; dirs?: string[] }>(
+  account: T,
+  dir: string,
+): T | null {
+  const dirs = account.dirs;
+  if (!dirs || dirs.length === 0) return null;
+
+  const normalized = normalizeDir(dir);
+  const filtered = dirs.filter((d) => normalizeDir(d) !== normalized);
+
+  if (filtered.length === dirs.length) return null;
+  if (filtered.length === 0) return { ...account, dirs: undefined };
+  return { ...account, dirs: filtered };
+}
+
 function closeCachedSessions(): void {
   // Dynamic import so the module is not required at load time — @earendil-works/pi-ai
   // is a peerDependency provided by the pi agent host, not bundled with this package.

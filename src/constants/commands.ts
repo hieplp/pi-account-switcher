@@ -29,6 +29,10 @@ export const COMMANDS = {
       description:
         "Verify secrets for one or all accounts without activating them (pass 'all'; add 'ping' to send a test request)",
     },
+    dirs: {
+      name: "accounts:dirs",
+      description: "Manage working directories for CWD-based auto-select",
+    },
   },
   providers: {
     add: {
