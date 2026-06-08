@@ -63,18 +63,16 @@ class AccountServiceImpl implements AccountService {
     // old format migration, promote its account to config-level default
     // (if not set yet) and clear the key. This is dead data — sessions
     // should only have per-session keys once migration completes.
-    if (key !== "default") {
+    if (await this.stateStore.sessionExists("default")) {
       const legacyDefault = await this.stateStore.loadSession("default");
-      if (legacyDefault.activeAccountId) {
-        if (!(await this.getDefaultAccountId())) {
-          await this.setDefaultAccountId(legacyDefault.activeAccountId);
-        }
-        await this.stateStore.deleteSession("default");
-        if (!this.activeAccountId) {
-          this.activeAccountId = legacyDefault.activeAccountId;
-          this.activeModelId = legacyDefault.activeModelId;
-          this.activeModelProvider = legacyDefault.activeModelProvider;
-        }
+      if (legacyDefault.activeAccountId && !(await this.getDefaultAccountId())) {
+        await this.setDefaultAccountId(legacyDefault.activeAccountId);
+      }
+      await this.stateStore.deleteSession("default");
+      if (!this.activeAccountId && legacyDefault.activeAccountId) {
+        this.activeAccountId = legacyDefault.activeAccountId;
+        this.activeModelId = legacyDefault.activeModelId;
+        this.activeModelProvider = legacyDefault.activeModelProvider;
       }
     }
   }
