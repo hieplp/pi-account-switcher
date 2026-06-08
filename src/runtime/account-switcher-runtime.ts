@@ -22,6 +22,7 @@ export default class AccountSwitcherRuntime implements AccountSwitcher {
   private modelService: ModelService;
   private piAuthService: PiAuthService;
   private providerService: ProviderService;
+  private lastStatusLabel: string | undefined;
 
   constructor(private readonly pi: Pick<ExtensionAPI, "registerProvider" | "setModel">) {
     this.providerService = useProviderService(this.pi as ExtensionAPI, PROVIDERS_PATH);
@@ -68,7 +69,10 @@ export default class AccountSwitcherRuntime implements AccountSwitcher {
 
   refreshStatus(ctx: AccountSwitcherContext): void {
     const active = this.accountService.getActiveAccount();
-    uiUtil.setAccountStatus(ctx.ui, active?.label);
+    const label = active?.label;
+    if (label === this.lastStatusLabel) return;
+    this.lastStatusLabel = label;
+    uiUtil.setAccountStatus(ctx.ui, label);
   }
 
   async load(): Promise<void> {
