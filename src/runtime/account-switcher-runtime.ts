@@ -66,6 +66,11 @@ export default class AccountSwitcherRuntime implements AccountSwitcher {
     }
   }
 
+  refreshStatus(ctx: AccountSwitcherContext): void {
+    const active = this.accountService.getActiveAccount();
+    uiUtil.setAccountStatus(ctx.ui, active?.label);
+  }
+
   async load(): Promise<void> {
     await this.accountService.load();
     await this.providerService.load();
