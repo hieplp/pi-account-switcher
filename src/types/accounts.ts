@@ -29,6 +29,8 @@ export interface AccountConfig {
   usesProviderApiKey?: boolean;
   /** Optional model to switch to when this account is activated. */
   model?: string;
+  /** Directories where this account should be the default (CWD-based auto-select). */
+  dirs?: string[];
   /** Captured Pi /login credentials for built-in OAuth/subscription providers. */
   piAuth?: {
     provider: ProviderId;

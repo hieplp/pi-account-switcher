@@ -1,11 +1,12 @@
 import AccountSwitcher from "./account-switcher";
+import { createHash } from "node:crypto";
 import { ACCOUNTS_PATH, PROVIDERS_PATH, STATE_PATH } from "../constants";
 import type { Api, Model } from "@earendil-works/pi-ai";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { AccountConfig, AccountSwitcherContext, PiAuthEntry, ProviderConfig } from "../types";
 import type { AccountService, ModelService, PiAuthService, ProviderService } from "../services";
 import { useAccountService, useModelService, usePiAuthService, useProviderService } from "../services";
-import { accountUtil, modelUtil, providerUtil, uiUtil } from "../utils";
+import { accountUtil, findLongestMatchingDir, modelUtil, providerUtil, uiUtil } from "../utils";
 
 function resolveAuthProvider(account: AccountConfig, providers: ProviderConfig[]): string {
   if (account.piAuth?.provider) return account.piAuth.provider;
@@ -23,6 +24,7 @@ export default class AccountSwitcherRuntime implements AccountSwitcher {
   private piAuthService: PiAuthService;
   private providerService: ProviderService;
   private lastStatusLabel: string | undefined;
+  private sessionKey: string | undefined;
 
   constructor(private readonly pi: Pick<ExtensionAPI, "registerProvider" | "setModel">) {
     this.providerService = useProviderService(this.pi as ExtensionAPI, PROVIDERS_PATH);
@@ -31,40 +33,53 @@ export default class AccountSwitcherRuntime implements AccountSwitcher {
     this.piAuthService = usePiAuthService();
   }
 
+  /** Derive a stable session key from the session manager. */
+  private getSessionKey(ctx: AccountSwitcherContext): string {
+    try {
+      const sm = (ctx as unknown as Record<string, unknown>).sessionManager as Record<string, unknown> | undefined;
+      const sessionFile = typeof sm?.getSessionFile === "function" ? (sm.getSessionFile as () => string)() : undefined;
+      if (sessionFile) return createHash("sha256").update(sessionFile).digest("hex").slice(0, 12);
+    } catch { /* fall through */ }
+    return "default";
+  }
+
+  /** Find the account whose dirs contain the longest prefix of cwd. */
+  private findAccountForCwd(cwd: string | undefined): AccountConfig | undefined {
+    if (!cwd) return undefined;
+    const id = findLongestMatchingDir(this.accountService.getAccounts(), cwd);
+    return id ? this.accountService.getAccounts().find((a) => a.id === id) : undefined;
+  }
+
   // ===============================================================================================
   // Core
   // ===============================================================================================
 
   async init(ctx: AccountSwitcherContext): Promise<void> {
+    this.sessionKey = this.getSessionKey(ctx);
+    this.accountService.setSessionKey(this.sessionKey);
     await this.load();
 
-    const active = this.accountService.getActiveAccount();
-    uiUtil.setAccountStatus(ctx.ui, active?.label);
-
-    // Re-apply saved account credentials so env vars and OAuth auth storage are
-    // populated on session start, not only after the first explicit switch.
-    if (active) {
-      const providers = this.providerService.getProviders();
-      await this.applyProviderApiKey(active, providers);
-      await accountUtil.applyAccountEnv(active, ctx.modelRegistry, resolveAuthProvider(active, providers));
+    // Cascade:
+    // 1. Session key state (handled inside accountService.load())
+    // 2. CWD-based auto-select via dirs
+    // 3. defaultAccountId from config
+    let selected = this.accountService.getActiveAccount();
+    if (!selected) {
+      selected = this.findAccountForCwd(ctx.cwd);
     }
-
-    // Restore the last active model. modelRegistry.find returns undefined if the
-    // model is no longer available (e.g. provider was removed), in which case we
-    // leave Pi's default model selection untouched.
-    const modelState = this.accountService.getActiveModelState();
-    if (modelState) {
-      const providers = this.providerService.getProviders();
-      const activeProvider = active ? resolveAccountProvider(active, providers) : undefined;
-      const savedProvider = providerUtil.normalizeProviderWithCustom(modelState.provider, providers);
-
-      // Only restore a saved model when it belongs to the active account's provider.
-      // Otherwise Pi can start with credentials for one provider and a model from another.
-      if (!activeProvider || savedProvider === activeProvider) {
-        const model = ctx.modelRegistry.find(modelState.provider, modelState.id);
-        if (model) await this.modelService.applyModel(model, ctx);
+    if (!selected) {
+      const defaultId = await this.accountService.getDefaultAccountId();
+      if (defaultId) {
+        selected = this.accountService.getAccounts().find((a) => a.id === defaultId);
       }
     }
+    if (selected) {
+      const providers = this.providerService.getProviders();
+      await this.applyProviderApiKey(selected, providers);
+      await this.accountService.activateAccount(selected, ctx, resolveAuthProvider(selected, providers));
+    }
+
+    uiUtil.setAccountStatus(ctx.ui, selected?.label);
   }
 
   refreshStatus(ctx: AccountSwitcherContext): void {
@@ -76,8 +91,8 @@ export default class AccountSwitcherRuntime implements AccountSwitcher {
   }
 
   async load(): Promise<void> {
-    await this.accountService.load();
     await this.providerService.load();
+    await this.accountService.load();
   }
 
   async onModelSelect(provider: string, ctx: AccountSwitcherContext): Promise<void> {

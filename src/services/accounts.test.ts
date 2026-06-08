@@ -1,0 +1,206 @@
+import { mkdtemp } from "node:fs/promises";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
+import { describe, expect, it } from "vitest";
+import { useAccountService } from "./accounts";
+
+describe("AccountService", () => {
+  describe("session-scoped state", () => {
+    it("isolates active account per session key", async () => {
+      const dir = await mkdtemp(join(tmpdir(), "account-switcher-"));
+      const accountsPath = join(dir, "accounts.json");
+      const statePath = join(dir, "state.json");
+
+      // Start with five different accounts
+      const accounts = ["alice", "bob", "carol"].map((name) => ({
+        id: name,
+        label: name,
+        provider: "opencode",
+        env: { FOO: { type: "literal" as const, value: "bar" } },
+      }));
+
+      // Add accounts via a throwaway service
+      const setup = useAccountService(accountsPath, statePath);
+      for (const account of accounts) {
+        await setup.addAccount(account);
+      }
+
+      // Simulate two different Pi sessions with different session keys
+      const sessionA = useAccountService(accountsPath, statePath);
+      sessionA.setSessionKey("session-a");
+      await sessionA.load();
+
+      const sessionB = useAccountService(accountsPath, statePath);
+      sessionB.setSessionKey("session-b");
+      await sessionB.load();
+
+      // Initially both have no active account
+      expect(sessionA.getActiveAccount()).toBeUndefined();
+      expect(sessionB.getActiveAccount()).toBeUndefined();
+
+      // Session A saves a model ("activates" in storage terms)
+      await sessionA.saveActiveModel("gpt-4", "opencode");
+
+      // SaveActiveModel doesn't set activeAccountId, only model state
+      // Let's also verify model state isolation
+      expect(sessionA.getActiveModelState()).toEqual({ id: "gpt-4", provider: "opencode" });
+      expect(sessionB.getActiveModelState()).toBeUndefined();
+    });
+
+    it("loads session-scoped activeAccountId from state", async () => {
+      const dir = await mkdtemp(join(tmpdir(), "account-switcher-"));
+      const accountsPath = join(dir, "accounts.json");
+      const statePath = join(dir, "state.json");
+
+      const svc = useAccountService(accountsPath, statePath);
+
+      await svc.addAccount({
+        id: "personal",
+        label: "Personal",
+        provider: "opencode",
+        env: { KEY: { type: "literal" as const, value: "secret" } },
+      });
+
+      // Manually write session state via the underlying state store
+      svc.setSessionKey("test-session");
+      await svc.load();
+      // Directly set internal state (simulating what activateAccount does)
+      // This is what we'd test: load reads the right session key
+      
+      // Write state for "other-session"
+      const { useStateStore } = await import("../storage");
+      const stateStore = useStateStore(statePath);
+      await stateStore.saveSession("test-session", { activeAccountId: "personal" });
+
+      // Reload — should pick up the session-scoped state
+      await svc.load();
+      expect(svc.getActiveAccount()?.id).toBe("personal");
+    });
+  });
+
+  describe("dirs field on accounts", () => {
+    it("accepts accounts with dirs", async () => {
+      const dir = await mkdtemp(join(tmpdir(), "account-switcher-"));
+      const accountsPath = join(dir, "accounts.json");
+      const svc = useAccountService(accountsPath);
+
+      await svc.addAccount({
+        id: "work",
+        label: "Work",
+        provider: "opencode",
+        env: { KEY: { type: "literal" as const, value: "secret" } },
+        dirs: ["/home/user/Development/Work", "/home/user/Projects/Client"],
+      });
+
+      const loaded = await (await import("../storage")).useAccountStore(accountsPath).load();
+      expect(loaded).toHaveLength(1);
+      expect(loaded[0].dirs).toEqual(["/home/user/Development/Work", "/home/user/Projects/Client"]);
+    });
+
+    it("allows accounts without dirs", async () => {
+      const dir = await mkdtemp(join(tmpdir(), "account-switcher-"));
+      const accountsPath = join(dir, "accounts.json");
+      const svc = useAccountService(accountsPath);
+
+      await svc.addAccount({
+        id: "personal",
+        label: "Personal",
+        provider: "opencode",
+        env: { KEY: { type: "literal" as const, value: "secret" } },
+      });
+
+      const loaded = await (await import("../storage")).useAccountStore(accountsPath).load();
+      expect(loaded).toHaveLength(1);
+      expect(loaded[0].dirs).toBeUndefined();
+    });
+  });
+
+  describe("cascade: defaultAccountId fallback", () => {
+    it("falls back to defaultAccountId when no session state exists", async () => {
+      const dir = await mkdtemp(join(tmpdir(), "account-switcher-"));
+      const accountsPath = join(dir, "accounts.json");
+      const statePath = join(dir, "state.json");
+
+      const store = useAccountService(accountsPath, statePath);
+      await store.addAccount({ id: "default-user", label: "Default", provider: "opencode", env: { KEY: { type: "literal", value: "secret" } } });
+      await store.setDefaultAccountId("default-user");
+
+      // New session with no state — should fall back to defaultAccountId
+      const session = useAccountService(accountsPath, statePath);
+      session.setSessionKey("fresh-session");
+      await session.load();
+
+      expect(session.getActiveAccount()?.id).toBe("default-user");
+    });
+
+    it("session state takes priority over defaultAccountId", async () => {
+      const dir = await mkdtemp(join(tmpdir(), "account-switcher-"));
+      const accountsPath = join(dir, "accounts.json");
+      const statePath = join(dir, "state.json");
+
+      const store = useAccountService(accountsPath, statePath);
+      await store.addAccount({ id: "default-user", label: "Default", provider: "opencode", env: { KEY: { type: "literal", value: "secret" } } });
+      await store.addAccount({ id: "session-user", label: "Session", provider: "opencode", env: { KEY: { type: "literal", value: "secret" } } });
+      await store.setDefaultAccountId("default-user");
+
+      // Pre-populate session-scoped state
+      store.setSessionKey("my-session");
+      await store.load();
+      // Manually simulate setting the active account (via internal state)
+      // We do this by directly writing to the state store
+      const { useStateStore } = await import("../storage");
+      await useStateStore(statePath).saveSession("my-session", { activeAccountId: "session-user" });
+
+      // Fresh service for same session — should use session state, not default
+      const session = useAccountService(accountsPath, statePath);
+      session.setSessionKey("my-session");
+      await session.load();
+
+      expect(session.getActiveAccount()?.id).toBe("session-user");
+    });
+
+    it("no session state and no defaultAccountId leaves no active account", async () => {
+      const dir = await mkdtemp(join(tmpdir(), "account-switcher-"));
+      const accountsPath = join(dir, "accounts.json");
+      const statePath = join(dir, "state.json");
+
+      const store = useAccountService(accountsPath, statePath);
+      await store.addAccount({ id: "orphan", label: "Orphan", provider: "opencode", env: { KEY: { type: "literal", value: "secret" } } });
+      // No setDefaultAccountId called
+
+      const session = useAccountService(accountsPath, statePath);
+      session.setSessionKey("new-session");
+      await session.load();
+
+      expect(session.getActiveAccount()).toBeUndefined();
+    });
+  });
+
+  describe("model state isolation per session", () => {
+    it("each session has independent model state", async () => {
+      const dir = await mkdtemp(join(tmpdir(), "account-switcher-"));
+      const accountsPath = join(dir, "accounts.json");
+      const statePath = join(dir, "state.json");
+
+      const accounts = ["a", "b", "c"].map((name) => ({
+        id: name, label: name, provider: "opencode",
+        env: { KEY: { type: "literal" as const, value: "bar" } },
+      }));
+      const setup = useAccountService(accountsPath, statePath);
+      for (const account of accounts) await setup.addAccount(account);
+
+      const sessionA = useAccountService(accountsPath, statePath);
+      sessionA.setSessionKey("model-session-A");
+      await sessionA.load();
+      await sessionA.saveActiveModel("claude-3-5", "anthropic");
+
+      const sessionB = useAccountService(accountsPath, statePath);
+      sessionB.setSessionKey("model-session-B");
+      await sessionB.load();
+      await sessionB.saveActiveModel("gpt-4o", "openai");
+
+      expect(sessionA.getActiveModelState()).toEqual({ id: "claude-3-5", provider: "anthropic" });
+      expect(sessionB.getActiveModelState()).toEqual({ id: "gpt-4o", provider: "openai" });
+    });
+  });
+});
