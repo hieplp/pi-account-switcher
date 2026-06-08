@@ -116,4 +116,57 @@ describe("StateStore", () => {
       expect(sessionState.activeAccountId).toBeUndefined();
     });
   });
+
+  describe("deleteSession", () => {
+    it("removes a session key from the persisted file", async () => {
+      const dir = await mkdtemp(join(tmpdir(), "account-switcher-"));
+      const path = join(dir, "state.json");
+      const store = useStateStore(path);
+
+      await store.saveSession("session-to-delete", { activeAccountId: "alice" });
+      await store.saveSession("session-to-keep", { activeAccountId: "bob" });
+
+      await store.deleteSession("session-to-delete");
+
+      const raw = JSON.parse(await readFile(path, "utf8"));
+      expect(Object.keys(raw.sessions)).not.toContain("session-to-delete");
+      expect(raw.sessions["session-to-keep"]).toEqual({ activeAccountId: "bob" });
+    });
+
+    it("loadSession returns empty after deleteSession for that key", async () => {
+      const dir = await mkdtemp(join(tmpdir(), "account-switcher-"));
+      const path = join(dir, "state.json");
+      const store = useStateStore(path);
+
+      await store.saveSession("temp-session", { activeAccountId: "alice" });
+      await store.deleteSession("temp-session");
+
+      const state = await store.loadSession("temp-session");
+      expect(state.activeAccountId).toBeUndefined();
+    });
+
+    it("deleteSession on a key that does not exist does not throw", async () => {
+      const dir = await mkdtemp(join(tmpdir(), "account-switcher-"));
+      const path = join(dir, "state.json");
+      const store = useStateStore(path);
+
+      await expect(store.deleteSession("nonexistent-key")).resolves.toBeUndefined();
+    });
+
+    it("deleteSession does not affect other session keys", async () => {
+      const dir = await mkdtemp(join(tmpdir(), "account-switcher-"));
+      const path = join(dir, "state.json");
+      const store = useStateStore(path);
+
+      await store.saveSession("keep-a", { activeAccountId: "alice" });
+      await store.saveSession("keep-b", { activeModelId: "claude" });
+      await store.saveSession("remove-me", { activeAccountId: "bob" });
+
+      await store.deleteSession("remove-me");
+
+      expect((await store.loadSession("keep-a")).activeAccountId).toBe("alice");
+      expect((await store.loadSession("keep-b")).activeModelId).toBe("claude");
+      expect((await store.loadSession("remove-me")).activeAccountId).toBeUndefined();
+    });
+  });
 });

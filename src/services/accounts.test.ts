@@ -66,7 +66,7 @@ describe("AccountService", () => {
       await svc.load();
       // Directly set internal state (simulating what activateAccount does)
       // This is what we'd test: load reads the right session key
-      
+
       // Write state for "other-session"
       const { useStateStore } = await import("../storage");
       const stateStore = useStateStore(statePath);
@@ -176,7 +176,82 @@ describe("AccountService", () => {
     });
   });
 
-    it("migrates defaultAccountId when resolved from session state", async () => {
+  describe("always-run legacy cleanup", () => {
+    it("deletes sessions.default when session has its own state and sessions.default exists", async () => {
+      const dir = await mkdtemp(join(tmpdir(), "account-switcher-"));
+      const accountsPath = join(dir, "accounts.json");
+      const statePath = join(dir, "state.json");
+
+      const setup = useAccountService(accountsPath, statePath);
+      await setup.addAccount({ id: "legacy-user", label: "Legacy", provider: "opencode", env: { KEY: { type: "literal", value: "x" } } });
+      await setup.addAccount({ id: "session-user", label: "Session", provider: "opencode", env: { KEY: { type: "literal", value: "x" } } });
+
+      // Pre-populate both the legacy "default" key and a session-scoped key
+      const { useStateStore } = await import("../storage");
+      const stateStore = useStateStore(statePath);
+      await stateStore.saveSession("default", { activeAccountId: "legacy-user" });
+      await stateStore.saveSession("my-session", { activeAccountId: "session-user" });
+
+      // Load with a session that has its own state — legacy cleanup should still run
+      const session = useAccountService(accountsPath, statePath);
+      session.setSessionKey("my-session");
+      await session.load();
+
+      // sessions.default should be gone from disk
+      const { readFile } = await import("node:fs/promises");
+      const raw = JSON.parse(await readFile(statePath, "utf8"));
+      expect(Object.keys(raw.sessions)).not.toContain("default");
+    });
+
+    it("after cleanup, fresh load with new session key does NOT see sessions.default", async () => {
+      const dir = await mkdtemp(join(tmpdir(), "account-switcher-"));
+      const accountsPath = join(dir, "accounts.json");
+      const statePath = join(dir, "state.json");
+
+      const setup = useAccountService(accountsPath, statePath);
+      await setup.addAccount({ id: "legacy-user", label: "Legacy", provider: "opencode", env: { KEY: { type: "literal", value: "x" } } });
+
+      // Simulate the migrated-but-not-cleaned-up state
+      const { useStateStore } = await import("../storage");
+      await useStateStore(statePath).saveSession("default", { activeAccountId: "legacy-user" });
+
+      // First session loads and triggers cleanup
+      const first = useAccountService(accountsPath, statePath);
+      first.setSessionKey("session-1");
+      await first.load();
+
+      // Second session — should not see sessions.default at all
+      const second = useAccountService(accountsPath, statePath);
+      second.setSessionKey("session-2");
+      await second.load();
+
+      const { readFile } = await import("node:fs/promises");
+      const raw = JSON.parse(await readFile(statePath, "utf8"));
+      expect(Object.keys(raw.sessions)).not.toContain("default");
+    });
+
+    it("no sessions.default present causes no errors and state is unchanged", async () => {
+      const dir = await mkdtemp(join(tmpdir(), "account-switcher-"));
+      const accountsPath = join(dir, "accounts.json");
+      const statePath = join(dir, "state.json");
+
+      const setup = useAccountService(accountsPath, statePath);
+      await setup.addAccount({ id: "user-a", label: "User A", provider: "opencode", env: { KEY: { type: "literal", value: "x" } } });
+      await setup.addAccount({ id: "user-b", label: "User B", provider: "opencode", env: { KEY: { type: "literal", value: "x" } } });
+
+      // Pre-populate session state (no sessions.default)
+      const { useStateStore } = await import("../storage");
+      await useStateStore(statePath).saveSession("my-session", { activeAccountId: "user-a" });
+
+      const session = useAccountService(accountsPath, statePath);
+      session.setSessionKey("my-session");
+      await expect(session.load()).resolves.toBeUndefined();
+      expect(session.getActiveAccount()?.id).toBe("user-a");
+    });
+  });
+
+  describe("migration with deleteSession", () => {
+    it("migrates defaultAccountId and cleans up sessions.default via deleteSession", async () => {
       const dir = await mkdtemp(join(tmpdir(), "account-switcher-"));
       const accountsPath = join(dir, "accounts.json");
       const statePath = join(dir, "state.json");
@@ -199,7 +274,17 @@ describe("AccountService", () => {
       // Should have written defaultAccountId to accounts.json
       const config = await (await import("../storage")).useAccountStore(accountsPath).loadConfig();
       expect(config.defaultAccountId).toBe("migrated-user");
+
+      // After migration cleanup via deleteSession, loadSession returns {} (key is gone)
+      const state = await useStateStore(statePath).loadSession("default");
+      expect(state.activeAccountId).toBeUndefined();
+
+      // JSON file on disk does NOT have a "default" key in sessions
+      const { readFile } = await import("node:fs/promises");
+      const raw = JSON.parse(await readFile(statePath, "utf8"));
+      expect(Object.keys(raw.sessions)).not.toContain("default");
     });
+  });
 
   describe("model state isolation per session", () => {
     it("each session has independent model state", async () => {
