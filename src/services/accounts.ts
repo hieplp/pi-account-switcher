@@ -69,7 +69,7 @@ class AccountServiceImpl implements AccountService {
         if (!(await this.getDefaultAccountId())) {
           await this.setDefaultAccountId(legacyDefault.activeAccountId);
         }
-        await this.stateStore.saveSession("default", {});
+        await this.stateStore.deleteSession("default");
         if (!this.activeAccountId) {
           this.activeAccountId = legacyDefault.activeAccountId;
           this.activeModelId = legacyDefault.activeModelId;

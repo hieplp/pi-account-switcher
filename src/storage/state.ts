@@ -40,6 +40,7 @@ export interface StateStore {
   save(state: AppState): Promise<void>;
   loadSession(sessionKey: string): Promise<SessionState>;
   saveSession(sessionKey: string, state: SessionState): Promise<void>;
+  deleteSession(sessionKey: string): Promise<void>;
 }
 
 export function useStateStore(path = STATE_PATH): StateStore {
@@ -71,6 +72,12 @@ class StateStoreImpl implements StateStore {
   async saveSession(sessionKey: string, state: SessionState): Promise<void> {
     const appState = await this.load();
     appState.sessions[sessionKey] = state;
+    await this.save(appState);
+  }
+
+  async deleteSession(sessionKey: string): Promise<void> {
+    const appState = await this.load();
+    delete appState.sessions[sessionKey];
     await this.save(appState);
   }
 }
