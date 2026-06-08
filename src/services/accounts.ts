@@ -53,14 +53,15 @@ class AccountServiceImpl implements AccountService {
       this.activeModelId = state.activeModelId;
       this.activeModelProvider = state.activeModelProvider;
     } else {
-      // One-time legacy migration: check for sessions.default leftover
-      // from old flat state.json format. Only read this on sessions that
-      // don't have their own state yet; never pollute normal cascade.
+      // One-time legacy cleanup: sessions.default is dead data from the
+      // old flat state.json migration. If it exists, promote its account
+      // to config-level defaultAccountId (if not set) and clear the key.
       if (key !== "default") {
         const legacyDefault = await this.stateStore.loadSession("default");
-        if (legacyDefault.activeAccountId && !(await this.getDefaultAccountId())) {
-          // Migrate: promote legacy default to config-level, activate it now
-          await this.setDefaultAccountId(legacyDefault.activeAccountId);
+        if (legacyDefault.activeAccountId) {
+          if (!(await this.getDefaultAccountId())) {
+            await this.setDefaultAccountId(legacyDefault.activeAccountId);
+          }
           await this.stateStore.saveSession("default", {});
           this.activeAccountId = legacyDefault.activeAccountId;
           this.activeModelId = legacyDefault.activeModelId;
