@@ -53,25 +53,27 @@ class AccountServiceImpl implements AccountService {
       this.activeModelId = state.activeModelId;
       this.activeModelProvider = state.activeModelProvider;
     } else {
-      // One-time legacy cleanup: sessions.default is dead data from the
-      // old flat state.json migration. If it exists, promote its account
-      // to config-level defaultAccountId (if not set) and clear the key.
-      if (key !== "default") {
-        const legacyDefault = await this.stateStore.loadSession("default");
-        if (legacyDefault.activeAccountId) {
-          if (!(await this.getDefaultAccountId())) {
-            await this.setDefaultAccountId(legacyDefault.activeAccountId);
-          }
-          await this.stateStore.saveSession("default", {});
+      const defaultId = await this.getDefaultAccountId();
+      if (defaultId && this.accounts.some((a) => a.id === defaultId)) {
+        this.activeAccountId = defaultId;
+      }
+    }
+
+    // Legacy cleanup (always runs): if sessions.default still exists from
+    // old format migration, promote its account to config-level default
+    // (if not set yet) and clear the key. This is dead data — sessions
+    // should only have per-session keys once migration completes.
+    if (key !== "default") {
+      const legacyDefault = await this.stateStore.loadSession("default");
+      if (legacyDefault.activeAccountId) {
+        if (!(await this.getDefaultAccountId())) {
+          await this.setDefaultAccountId(legacyDefault.activeAccountId);
+        }
+        await this.stateStore.saveSession("default", {});
+        if (!this.activeAccountId) {
           this.activeAccountId = legacyDefault.activeAccountId;
           this.activeModelId = legacyDefault.activeModelId;
           this.activeModelProvider = legacyDefault.activeModelProvider;
-        }
-      }
-      if (!this.activeAccountId) {
-        const defaultId = await this.getDefaultAccountId();
-        if (defaultId && this.accounts.some((a) => a.id === defaultId)) {
-          this.activeAccountId = defaultId;
         }
       }
     }
