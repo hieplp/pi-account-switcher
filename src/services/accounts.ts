@@ -47,35 +47,31 @@ class AccountServiceImpl implements AccountService {
     const key = this.sessionKey ?? "default";
     const state = await this.stateStore.loadSession(key);
 
-    // Cascade:
-    // 1. Session key state
-    // 2. "default" key (legacy backwards compat for existing state.json)
-    // 3. defaultAccountId from config
+    // Cascade: session key state → defaultAccountId from config → none
     if (state.activeAccountId) {
       this.activeAccountId = state.activeAccountId;
       this.activeModelId = state.activeModelId;
       this.activeModelProvider = state.activeModelProvider;
-    } else if (key !== "default") {
-      const fallback = await this.stateStore.loadSession("default");
-      if (fallback.activeAccountId) {
-        this.activeAccountId = fallback.activeAccountId;
-        this.activeModelId = state.activeModelId ?? fallback.activeModelId;
-        this.activeModelProvider = state.activeModelProvider ?? fallback.activeModelProvider;
-      } else {
-        // Step 3: fall back to config-level defaultAccountId
+    } else {
+      // One-time legacy migration: check for sessions.default leftover
+      // from old flat state.json format. Only read this on sessions that
+      // don't have their own state yet; never pollute normal cascade.
+      if (key !== "default") {
+        const legacyDefault = await this.stateStore.loadSession("default");
+        if (legacyDefault.activeAccountId && !(await this.getDefaultAccountId())) {
+          // Migrate: promote legacy default to config-level, activate it now
+          await this.setDefaultAccountId(legacyDefault.activeAccountId);
+          await this.stateStore.saveSession("default", {});
+          this.activeAccountId = legacyDefault.activeAccountId;
+          this.activeModelId = legacyDefault.activeModelId;
+          this.activeModelProvider = legacyDefault.activeModelProvider;
+        }
+      }
+      if (!this.activeAccountId) {
         const defaultId = await this.getDefaultAccountId();
         if (defaultId && this.accounts.some((a) => a.id === defaultId)) {
           this.activeAccountId = defaultId;
         }
-      }
-    }
-
-    // Migration: if an account was resolved (from session or default state) and
-    // accounts.json has no defaultAccountId yet, write it once for future sessions.
-    if (this.activeAccountId) {
-      const currentDefault = await this.getDefaultAccountId();
-      if (!currentDefault) {
-        await this.setDefaultAccountId(this.activeAccountId);
       }
     }
   }
