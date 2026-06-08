@@ -176,6 +176,31 @@ describe("AccountService", () => {
     });
   });
 
+    it("migrates defaultAccountId when resolved from session state", async () => {
+      const dir = await mkdtemp(join(tmpdir(), "account-switcher-"));
+      const accountsPath = join(dir, "accounts.json");
+      const statePath = join(dir, "state.json");
+
+      const store = useAccountService(accountsPath, statePath);
+      await store.addAccount({ id: "migrated-user", label: "Migrated", provider: "opencode", env: { KEY: { type: "literal" as const, value: "secret" } } });
+
+      // Pre-populate session state (simulating old format migration → "default" key)
+      const { useStateStore } = await import("../storage");
+      await useStateStore(statePath).saveSession("default", { activeAccountId: "migrated-user" });
+
+      // New session with no state of its own
+      const session = useAccountService(accountsPath, statePath);
+      session.setSessionKey("fresh-session");
+      await session.load();
+
+      // Should have resolved migrated-user from "default" key cascade
+      expect(session.getActiveAccount()?.id).toBe("migrated-user");
+
+      // Should have written defaultAccountId to accounts.json
+      const config = await (await import("../storage")).useAccountStore(accountsPath).loadConfig();
+      expect(config.defaultAccountId).toBe("migrated-user");
+    });
+
   describe("model state isolation per session", () => {
     it("each session has independent model state", async () => {
       const dir = await mkdtemp(join(tmpdir(), "account-switcher-"));

@@ -69,6 +69,15 @@ class AccountServiceImpl implements AccountService {
         }
       }
     }
+
+    // Migration: if an account was resolved (from session or default state) and
+    // accounts.json has no defaultAccountId yet, write it once for future sessions.
+    if (this.activeAccountId) {
+      const currentDefault = await this.getDefaultAccountId();
+      if (!currentDefault) {
+        await this.setDefaultAccountId(this.activeAccountId);
+      }
+    }
   }
 
   getAccounts(): AccountConfig[] {
