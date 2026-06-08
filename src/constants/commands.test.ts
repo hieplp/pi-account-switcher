@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { commandUtil } from "@/utils";
+import { commandUtil } from "../utils";
 import { COMMANDS } from "./commands";
 
 describe("COMMANDS", () => {

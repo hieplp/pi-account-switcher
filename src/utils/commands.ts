@@ -1,4 +1,4 @@
-import { COMMAND_PREFIX_ENV } from "@/constants";
+import { COMMAND_PREFIX_ENV } from "../constants";
 
 export const commandUtil = {
   name: (name: string): string => {

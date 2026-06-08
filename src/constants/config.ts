@@ -1,4 +1,4 @@
-import type { AccountSwitcherConfig } from "@/types";
+import type { AccountSwitcherConfig } from "../types";
 
 export const DEFAULT_CONFIG: AccountSwitcherConfig = {
   accounts: [],

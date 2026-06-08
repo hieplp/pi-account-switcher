@@ -1,12 +1,12 @@
 import { readFile } from "node:fs/promises";
 import z from "zod";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import type { AccountSwitcher } from "@/runtime";
-import { ACCOUNTS_PATH, COMMANDS, DEFAULT_EXPORT_PATH, PROVIDERS_PATH, STATE_PATH } from "@/constants";
-import { accountSchema, providerSchema } from "@/schemas";
-import type { AccountConfig, AccountSwitcherContext, ProviderConfig } from "@/types";
+import type { AccountSwitcher } from "../../runtime";
+import { ACCOUNTS_PATH, COMMANDS, DEFAULT_EXPORT_PATH, PROVIDERS_PATH, STATE_PATH } from "../../constants";
+import { accountSchema, providerSchema } from "../../schemas";
+import type { AccountConfig, AccountSwitcherContext, ProviderConfig } from "../../types";
 import { BaseCommand } from "../base";
-import { errorUtil, fileUtil, uiUtil } from "@/utils";
+import { errorUtil, fileUtil, uiUtil } from "../../utils";
 
 const importStateSchema = z
   .object({

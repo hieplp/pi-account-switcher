@@ -1,6 +1,6 @@
 import type { Api, Model } from "@earendil-works/pi-ai";
-import type { ProviderConfig } from "@/types";
-import { providerUtil } from "@/utils";
+import type { ProviderConfig } from "../../../types";
+import { providerUtil } from "../../../utils";
 
 export type ProviderModel = Model<Api>;
 

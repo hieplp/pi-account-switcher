@@ -1,7 +1,7 @@
 import type { ExtensionUIContext } from "@earendil-works/pi-coding-agent";
-import type { AccountConfig, ProviderConfig, SecretSource } from "@/types";
-import { commonUtil, providerUtil, uiUtil } from "@/utils";
-import { ACCOUNTS_PATH } from "@/constants";
+import type { AccountConfig, ProviderConfig, SecretSource } from "../../../types";
+import { commonUtil, providerUtil, uiUtil } from "../../../utils";
+import { ACCOUNTS_PATH } from "../../../constants";
 
 export const SECRET_SOURCE_CHOICES = {
   literal: "Paste API key now (stored in config)",

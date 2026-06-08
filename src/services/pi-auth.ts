@@ -1,5 +1,5 @@
-import { type PiAuthStore, usePiAuthStore, isOAuthEntry } from "@/storage";
-import type { PiAuthEntry } from "@/types";
+import { type PiAuthStore, usePiAuthStore, isOAuthEntry } from "../storage";
+import type { PiAuthEntry } from "../types";
 
 export interface PiAuthService {
   getEntry(provider: string): Promise<PiAuthEntry | undefined>;

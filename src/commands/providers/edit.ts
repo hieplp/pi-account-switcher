@@ -1,9 +1,9 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import type { AccountSwitcher } from "@/runtime";
-import { COMMANDS } from "@/constants";
-import type { AccountSwitcherContext } from "@/types";
+import type { AccountSwitcher } from "../../runtime";
+import { COMMANDS } from "../../constants";
+import type { AccountSwitcherContext } from "../../types";
 import { ProviderConfigBuilder, ProviderCommand } from "./shared";
-import { errorUtil } from "@/utils";
+import { errorUtil } from "../../utils";
 
 export const useEditProviderCommand = (pi: ExtensionAPI, runtime: AccountSwitcher) => {
   new EditProviderCommand(pi, runtime).register();

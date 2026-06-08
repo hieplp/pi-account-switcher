@@ -1,5 +1,5 @@
 import z from "zod";
-import { jsonRecordSchema } from "@/schemas/common";
+import { jsonRecordSchema } from "../schemas/common";
 
 export const providerModelSchema = z
   .object({

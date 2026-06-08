@@ -1,5 +1,5 @@
-import type { ProviderConfig } from "@/types";
-import { BUILT_IN_PROVIDER_IDS, PROVIDER_ALIASES, PROVIDER_ENV_KEYS } from "@/constants";
+import type { ProviderConfig } from "../types";
+import { BUILT_IN_PROVIDER_IDS, PROVIDER_ALIASES, PROVIDER_ENV_KEYS } from "../constants";
 
 export const providerUtil = {
   normalizeProvider: (value: string): string => {

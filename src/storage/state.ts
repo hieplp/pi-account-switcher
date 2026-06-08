@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import z from "zod";
-import { STATE_PATH } from "@/constants";
-import { fileUtil } from "@/utils";
+import { STATE_PATH } from "../constants";
+import { fileUtil } from "../utils";
 
 const appStateSchema = z.object({
   activeAccountId: z.string().optional(),
