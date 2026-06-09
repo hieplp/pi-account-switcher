@@ -5,9 +5,11 @@ import { errorUtil, fileUtil } from "@/utils";
 
 export interface AccountStore {
   load(): Promise<AccountConfig[]>;
+  loadConfig(): Promise<AccountSwitcherConfig>;
   addAccount(account: AccountConfig): Promise<AccountConfig[]>;
   replaceAccount(originalId: string, account: AccountConfig): Promise<AccountConfig[]>;
   removeAccount(id: string): Promise<AccountConfig[]>;
+  setDefaultAccountId(id: string): Promise<void>;
 }
 
 export function useAccountStore(path: string) {
@@ -22,18 +24,20 @@ class AccountStoreImpl implements AccountStore {
   constructor(private readonly path: string) {}
 
   async load(): Promise<AccountConfig[]> {
+    const config = await this.loadConfig();
+    return config.accounts;
+  }
+
+  async loadConfig(): Promise<AccountSwitcherConfig> {
     try {
       const raw = await readFile(this.path, "utf8");
       const parsed = configSchema.parse(JSON.parse(raw));
-
-      const { accounts } = parsed;
-      accountValidator.assertNoDuplicateAccounts(accounts);
-      accountValidator.assertAccountsHaveCredentials(accounts);
-
-      return accounts;
+      accountValidator.assertNoDuplicateAccounts(parsed.accounts);
+      accountValidator.assertAccountsHaveCredentials(parsed.accounts);
+      return parsed;
     } catch (error) {
       if (fileUtil.isMissingFileError(error)) {
-        return [];
+        return { accounts: [] };
       }
       throw new Error(`Failed to load accounts at ${this.path}: ${errorUtil.format(error)}`);
     }
@@ -67,8 +71,18 @@ class AccountStoreImpl implements AccountStore {
   }
 
   private async save(accounts: AccountConfig[]): Promise<void> {
-    const config: AccountSwitcherConfig = { accounts };
+    const { defaultAccountId } = await this.loadConfig();
+    const config: AccountSwitcherConfig = { accounts, ...(defaultAccountId ? { defaultAccountId } : {}) };
     await fileUtil.writePrivateJson(this.path, config);
+  }
+
+  async setDefaultAccountId(id: string): Promise<void> {
+    const config = await this.loadConfig();
+    if (!config.accounts.some((a) => a.id === id)) {
+      throw new Error(`Account not found: ${id}`);
+    }
+    const updated: AccountSwitcherConfig = { ...config, defaultAccountId: id };
+    await fileUtil.writePrivateJson(this.path, updated);
   }
 }
 

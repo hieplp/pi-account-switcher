@@ -10,6 +10,12 @@ async function accountSwitcher(pi: ExtensionAPI) {
     await runtime.init(ctx as AccountSwitcherContext);
   });
 
+  // Re-assert account status on agent/turn lifecycle so it persists
+  // across TUI redraws, reloads, and powerline updates.
+  pi.on("agent_start", async (_, ctx) => {
+    runtime.refreshStatus(ctx as AccountSwitcherContext);
+  });
+
   pi.on("model_select", async (event, ctx) => {
     await runtime.onModelSelect(event.model.provider, ctx as AccountSwitcherContext);
   });

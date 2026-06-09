@@ -4,6 +4,7 @@ import type { AccountConfig, AccountSwitcherContext, PiAuthEntry, ProviderConfig
 export default interface AccountSwitcher {
   // Core
   init(ctx: AccountSwitcherContext): Promise<void>;
+  refreshStatus(ctx: AccountSwitcherContext): void;
   load(): Promise<void>;
   onModelSelect(provider: string, ctx: AccountSwitcherContext): Promise<void>;
 
@@ -27,7 +28,7 @@ export default interface AccountSwitcher {
   // Provider
   getProviders(): ProviderConfig[];
   registerProvider(provider: ProviderConfig): void;
-  addProvider(config: ProviderConfig): Promise<void>;
+  addProvider(provider: ProviderConfig): Promise<void>;
   editProvider(original: ProviderConfig, updated: ProviderConfig): Promise<void>;
   removeProvider(provider: ProviderConfig): Promise<void>;
 }
