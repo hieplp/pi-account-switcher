@@ -1,101 +1,38 @@
 # Pi Account Switcher — Install & Usage
 
-This guide explains how to install, run, and use this extension in Pi.
+This guide covers installation, configuration workflows, and troubleshooting for the account-switcher extension.
 
-## 1. Install Dependencies
+> For command reference and config file formats, see **README.md**.
 
-From this repository:
+## 1. Install
 
-```bash
-npm install
-```
-
-Optional sanity check:
-
-```bash
-npm run typecheck
-```
-
-## 2. Run Temporarily for Testing
-
-The fastest way to test the extension is with Pi's `-e` / `--extension` flag:
+### Run Temporarily for Testing
 
 ```bash
 pi -e ./src/extension.ts
 ```
 
-Then, inside Pi, add your first account:
+Inside Pi, add your first account:
 
 ```txt
 /accounts:add
 ```
 
-To reload after manually editing the config file, use Pi's built-in:
+To reload after config changes:
 
 ```txt
 /reload
 ```
 
-## 3. Install as a Project-local Pi Extension
-
-To make the extension auto-load for this project, place it under `.pi/extensions/` or configure it as a package.
-
-Recommended project-local setup:
+### Install as a Pi Package (recommended)
 
 ```bash
-mkdir -p .pi/extensions/account-switcher
-cp -R src package.json package-lock.json tsconfig.json .pi/extensions/account-switcher/
+pi install git:github.com/hieplp/pi-account-switcher
 ```
 
-Then start Pi from the project directory:
+See **README.md** for npm, project-local, and global install methods.
 
-```bash
-pi
-```
-
-If Pi is already running, use:
-
-```txt
-/reload
-```
-
-Pi auto-discovers extensions from:
-
-```txt
-.pi/extensions/*.ts
-.pi/extensions/*/index.ts
-~/.pi/agent/extensions/*.ts
-~/.pi/agent/extensions/*/index.ts
-```
-
-The easiest dev command is:
-
-```bash
-pi -e ./src/extension.ts
-```
-
-## 4. Install Globally for All Pi Projects
-
-To use the extension globally:
-
-```bash
-mkdir -p ~/.pi/agent/extensions/account-switcher
-cp -R src package.json package-lock.json tsconfig.json ~/.pi/agent/extensions/account-switcher/
-```
-
-Then start Pi anywhere:
-
-```bash
-pi
-```
-
-Or reload an existing Pi session:
-
-```txt
-/reload
-```
-
-## 5. OAuth Login Like Pi `/login`
+## 2. OAuth Login (Claude, Codex, Gemini, etc.)
 
 For subscription/OAuth providers, use Pi's built-in login first, then import that login as a named switchable account.
 
@@ -104,7 +41,7 @@ For subscription/OAuth providers, use Pi's built-in login first, then import tha
 /accounts:oauth
 ```
 
-To add another OAuth account for the same provider, run `/login` again with the other browser account, then run `/accounts:oauth` again with a different label.
+To add another OAuth account for the same provider, run `/login` again with a different browser account, then `/accounts:oauth` again with a different label.
 
 Switch OAuth accounts with:
 
@@ -112,17 +49,9 @@ Switch OAuth accounts with:
 /accounts:list
 ```
 
-OAuth credentials are captured from Pi's auth file:
+OAuth credentials are captured from `~/.pi/agent/auth.json`. When switching, the extension applies the stored credentials to Pi's live auth storage.
 
-```txt
-~/.pi/agent/auth.json
-```
-
-When switching OAuth accounts, this extension applies the stored credentials to Pi's live auth storage and clears cached provider sessions when Pi exposes cleanup hooks.
-
-## 6. Configure API-key Accounts from Inside Pi
-
-You can add API-key accounts directly from Pi without hand-writing JSON.
+## 3. Configure API-key Accounts from Inside Pi
 
 ### Add an account
 
@@ -130,17 +59,9 @@ You can add API-key accounts directly from Pi without hand-writing JSON.
 /accounts:add
 ```
 
-This opens a wizard for provider, label, id, credential env var, and secret source, then optionally activates the new account. If the id already exists, choose replace, enter a new id, or cancel. For custom model providers, choose a default model, then paste an account API key override or leave it blank to use the provider-level `apiKey`. Switching to that account re-registers the provider key and switches Pi to the account model. If you enter a free-text custom provider, Pi can save it as a reusable provider.
+The wizard asks for: provider, label, id, credential env var, and secret source. Supports pasted API key, env var, file path, shell command, or 1Password `op://` reference. If the id already exists, you can replace it, enter a new id, or cancel.
 
-The wizard supports secret sources from pasted API key, env var, file, shell command, or 1Password `op://` reference.
-
-Warning: if you choose `Paste API key now`, the key is written as plain text to:
-
-```txt
-~/.pi/account-switcher/accounts.json
-```
-
-Prefer env vars, files with restricted permissions, or 1Password references.
+**Warning:** choosing `Paste API key now` stores the key as plaintext in `accounts.json`. Prefer env vars, files with restricted permissions, or 1Password references.
 
 ### Manage custom providers
 
@@ -151,43 +72,11 @@ Prefer env vars, files with restricted permissions, or 1Password references.
 /providers:remove
 ```
 
-Custom providers are stored separately from accounts:
+Custom providers are stored in `~/.pi/account-switcher/providers.json`. Built-in providers are read-only. Removing a provider is blocked while any account still uses it.
 
-```txt
-~/.pi/account-switcher/providers.json
-```
+## 4. Configure Accounts Manually
 
-Built-in providers are read-only. Removing a custom provider is blocked while accounts still use it. Provider entries may also include Pi model-provider fields like `baseUrl`, `api`, `apiKey`, `compat`, and `models`; account-switcher registers those providers with Pi.
-
-`apiKey` can be an env var name, shell command (`!op read ...`), or raw key. Raw keys work, but they are stored in plaintext in `providers.json`; prefer env/file/1Password when possible.
-
-Example provider config:
-
-```json
-{
-  "providers": {
-    "acme": {
-      "name": "Acme AI",
-      "baseUrl": "https://api.acme.test/v1",
-      "api": "openai-completions",
-      "apiKey": "ACME_API_KEY",
-      "envKeys": ["ACME_API_KEY"],
-      "aliases": ["acme-ai"],
-      "models": [{ "id": "acme-coder", "name": "Acme Coder" }]
-    }
-  }
-}
-```
-
-## 7. Configure Accounts Manually
-
-Account config lives at:
-
-```txt
-~/.pi/account-switcher/accounts.json
-```
-
-Example config:
+Edit `~/.pi/account-switcher/accounts.json`:
 
 ```json
 {
@@ -197,228 +86,70 @@ Example config:
       "id": "claude-work",
       "label": "Claude — Work",
       "provider": "anthropic",
+      "dirs": ["/home/user/Development/Work"],
       "env": {
         "ANTHROPIC_API_KEY": { "type": "env", "name": "ANTHROPIC_WORK_API_KEY" }
       }
     },
     {
-      "id": "claude-personal",
-      "label": "Claude — Personal",
-      "provider": "anthropic",
-      "env": {
-        "ANTHROPIC_API_KEY": { "type": "file", "path": "~/.keys/claude-personal.txt" }
-      }
-    },
-    {
-      "id": "codex-client-a",
-      "label": "Codex — Client A",
+      "id": "openai-personal",
+      "label": "OpenAI — Personal",
       "provider": "openai",
       "env": {
-        "OPENAI_API_KEY": { "type": "op", "reference": "op://AI/CodexClientA/api-key" }
+        "OPENAI_API_KEY": { "type": "file", "path": "~/.keys/openai-personal.txt" }
       }
     }
   ]
 }
 ```
 
-## 8. Supported Secret Sources
+See **README.md** for secret source formats and state file format.
 
-### Literal value
+## 5. Switching Flow
 
-```json
-{
-  "OPENAI_API_KEY": { "type": "literal", "value": "sk-..." }
-}
-```
+1. Start Pi: `pi -e ./src/extension.ts`
+2. For OAuth accounts: `/login` → `/accounts:oauth`
+   For API-key accounts: `/accounts:add`
+3. Switch accounts anytime: `/accounts:list`
+4. If config was edited manually: `/reload`
 
-### Existing environment variable
+## 6. Directory-based Auto-Select
 
-```json
-{
-  "ANTHROPIC_API_KEY": { "type": "env", "name": "ANTHROPIC_WORK_API_KEY" }
-}
-```
+The extension can automatically activate the right account based on your current working directory. The `dirs` field on each account lists directory prefixes — the longest matching prefix wins. A `defaultAccountId` at the config level serves as the fallback for sessions that have no saved state and no directory match.
 
-### File
+### Manage dirs with `/accounts:dirs`
 
-```json
-{
-  "ANTHROPIC_API_KEY": { "type": "file", "path": "~/.keys/claude-work.txt" }
-}
-```
+The wizard opens with two options when an active account and current working directory are detected:
 
-### Shell command
+- **Auto-save** — one-step: saves the current directory to the active account
+- **Manual** — pick an account, then add (recursive directory browser from `~/`) or remove directories
 
-```json
-{
-  "ANTHROPIC_API_KEY": {
-    "type": "command",
-    "command": "op read op://AI/ClaudeWork/api-key"
-  }
-}
-```
+Auto-save is the quick path when you're already in the right folder with the right account active.
 
-### 1Password reference
+### Activation cascade (session start)
 
-```json
-{
-  "OPENAI_API_KEY": {
-    "type": "op",
-    "reference": "op://AI/CodexClientA/api-key"
-  }
-}
-```
+1. **Session state** — account previously selected for this Pi session
+2. **CWD-based auto-select** — longest matching directory prefix across all accounts
+3. **`defaultAccountId`** — config-level fallback in `accounts.json`
+4. **None** — no account activated until you pick one via `/accounts:list`
 
-A plain string is treated as a literal value, except strings beginning with `op://` are resolved using `op read`.
+## 7. State Persistence
 
-## 9. Commands
+Selected accounts and models are saved per Pi session at `~/.pi/account-switcher/state.json`. Each session gets its own key, derived from Pi's session file. Sessions with no saved state fall back to the activation cascade (see above).
 
-### Pick account for current provider
+Legacy flat-format state (`{ "activeAccountId": "..." }`) is automatically migrated to the session-keyed format on first load after upgrading.
 
-```txt
-/accounts:list
-```
+## 8. Credential Caching
 
-The extension tries to detect the current model provider and shows matching accounts.
+On switch, the extension updates `process.env`, Pi's live API-key overrides, and Pi's OAuth auth storage. If a provider still uses old credentials, run `/reload` or restart Pi.
 
-### Pick account for a specific provider
-
-```txt
-/accounts:list
-```
-
-Useful if Pi cannot detect the active provider.
-
-### List accounts
-
-```txt
-/accounts:list
-```
-
-### Import current Pi OAuth login
-
-```txt
-/accounts:oauth
-```
-
-Use this after Pi's built-in `/login`.
-
-### Add account interactively
-
-```txt
-/accounts:add
-```
-
-### Login/add account and activate it
-
-```txt
-/accounts:add
-```
-
-### Edit account
-
-```txt
-/accounts:edit
-```
-
-Edit label, provider, id, and env credential source. Blank text input keeps the existing value. Literal secret values are not displayed by default.
-
-### Remove account
-
-```txt
-/accounts:remove
-```
-
-Shows a non-secret summary, asks for confirmation, deletes the account, and clears stale saved selections.
-
-### Manage custom providers
-
-```txt
-/providers:list
-/providers:add
-/providers:edit
-/providers:remove
-```
-
-## 10. Switching Flow
-
-Typical usage:
-
-1. Start Pi:
-
-   ```bash
-   pi -e ./src/extension.ts
-   ```
-
-2. For OAuth/subscription accounts, login with Pi and import it:
-
-   ```txt
-   /login
-   /accounts:oauth
-   ```
-
-   For API-key accounts, add and activate an account:
-
-   ```txt
-   /accounts:add
-   ```
-
-3. Later, switch accounts:
-
-   ```txt
-   /accounts:list
-   ```
-
-Alternative manual config flow: edit `~/.pi/account-switcher/accounts.json` directly, then reload Pi:
-
-6. If needed, reload Pi runtime:
-
-   ```txt
-   /reload
-   ```
-
-## 11. State Persistence
-
-Selected accounts are saved at:
-
-```txt
-~/.pi/account-switcher/state.json
-```
-
-Example:
-
-```json
-{
-  "activeAccountId": "claude-work",
-  "activeModelId": "claude-sonnet-4",
-  "activeModelProvider": "anthropic"
-}
-```
-
-On Pi session start, the extension restores the saved active account and model state.
-
-## 12. Important Note About Credential Caching
-
-The extension updates `process.env`, Pi's live runtime API-key overrides, and Pi's live OAuth auth storage when those hooks are available.
-
-If a provider still keeps old credentials cached, run `/reload` or restart Pi.
-
-## 13. Troubleshooting
+## 9. Troubleshooting
 
 ### No accounts configured
-
-Run `/accounts:add` to create one interactively, or create `~/.pi/account-switcher/accounts.json` manually.
+Run `/accounts:add` to create one, or create `~/.pi/account-switcher/accounts.json` manually.
 
 ### No accounts for provider
-
-Run explicitly:
-
-```txt
-/accounts:list
-```
-
-Also check that account `provider` values match supported providers:
-
+Run `/accounts:list` explicitly. Check that `provider` values match supported providers:
 - `anthropic` / `claude`
 - `openai`
 - `openai-codex` / `codex`
@@ -427,20 +158,15 @@ Also check that account `provider` values match supported providers:
 - `openrouter`
 
 ### Secret resolves empty
-
-Check the configured secret source:
-
-- env var exists
+Check:
+- env var exists and is accessible
 - file exists and contains the key
-- command works manually
+- command works when run manually
 - `op` CLI is signed in
 
 ### Changes do not apply
-
-Switch the account again. If the provider still keeps old credentials cached, run:
-
+Switch the account again. If the provider still keeps old credentials cached:
 ```txt
 /reload
 ```
-
 If it still uses the old account, restart Pi.

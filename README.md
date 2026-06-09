@@ -10,35 +10,10 @@ claude/work  ·  claude/personal  ·  openai/team  ·  gemini/testing
 
 ## Install
 
-**From GitHub (recommended)**
-
 ```bash
-pi install git:github.com/hieplp/pi-account-switcher
-```
-
-**From npm**
-
-```bash
-pi install npm:@hieplp/pi-account-switcher
-```
-
-**Test without installing**
-
-```bash
-pi -e git:github.com/hieplp/pi-account-switcher
-```
-
-**Project-local install** (writes to `.pi/settings.json`)
-
-```bash
-pi install -l git:github.com/hieplp/pi-account-switcher
-```
-
-**Run from a local checkout**
-
-```bash
-npm install
-pi -e ./src/extension.ts
+pi install git:github.com/hieplp/pi-account-switcher     # from GitHub (recommended)
+pi install npm:@hieplp/pi-account-switcher                 # from npm
+pi install -l git:github.com/hieplp/pi-account-switcher   # project-local install
 ```
 
 After installing, reload Pi and add your first account:
@@ -47,16 +22,6 @@ After installing, reload Pi and add your first account:
 /reload
 /accounts:add
 ```
-
-### Local development command prefix
-
-If you have the npm package installed and also run a local checkout, set `PI_ACCOUNT_SWITCHER_COMMAND_PREFIX` before launching Pi to avoid command-name collisions:
-
-```bash
-PI_ACCOUNT_SWITCHER_COMMAND_PREFIX=dev pi -e ./src/extension.ts
-```
-
-The local commands will be registered as `/dev:accounts:list`, `/dev:accounts:add`, etc. The prefix may include the trailing colon (`dev:`) or omit it (`dev`).
 
 ---
 
@@ -72,6 +37,7 @@ The local commands will be registered as `/dev:accounts:list`, `/dev:accounts:ad
 | `/accounts:edit`   | Edit label, provider, id, or credential source                  |
 | `/accounts:remove` | Delete an account                                               |
 | `/accounts:oauth`  | Import the current Pi `/login` OAuth session as a named account |
+| `/accounts:dirs`   | Manage working directories for CWD-based auto-select            |
 
 ### Providers
 
@@ -100,92 +66,11 @@ The local commands will be registered as `/dev:accounts:list`, `/dev:accounts:ad
 
 ---
 
-## Adding Accounts
+## Directory-based Auto-Select
 
-Run `/accounts:add` and the wizard will ask for:
+Accounts can auto-activate based on your current working directory. Each account can list directory paths (`dirs`) — the longest prefix match wins. A `defaultAccountId` at the config level serves as the fallback. Use `/accounts:dirs` to manage directories interactively.
 
-1. **Provider** — pick a built-in or custom provider
-2. **Label** — a friendly display name (e.g. `Claude — Work`)
-3. **Account ID** — a unique slug (e.g. `claude-work`)
-4. **Credential env var** — e.g. `ANTHROPIC_API_KEY`
-5. **Secret source** — one of:
-   - Pasted API key (stored in plaintext — prefer the options below)
-   - Existing environment variable
-   - File path
-   - Shell command
-   - 1Password `op://` reference
-
-If the account ID already exists, Pi will ask whether to replace it, enter a new ID, or cancel.
-
----
-
-## OAuth Accounts (Claude, Codex, etc.)
-
-For subscription providers, use Pi's built-in login first, then import it as a named account:
-
-```
-/login
-```
-
-Complete browser/device login, then:
-
-```
-/accounts:oauth
-```
-
-Give it a label like `Claude — Work`. Repeat for as many accounts as you need — each gets its own saved credentials. Switch between them any time with `/accounts:list`.
-
-OAuth credentials are read from `~/.pi/agent/auth.json` and written back to Pi's live auth storage on switch.
-
----
-
-## Custom Providers
-
-Define a provider once, reuse it across accounts:
-
-```
-/providers:add
-```
-
-Custom providers are stored at `~/.pi/account-switcher/providers.json` and support all Pi model-provider fields:
-
-```json
-{
-  "providers": {
-    "acme": {
-      "name": "Acme AI",
-      "baseUrl": "https://api.acme.test/v1",
-      "api": "openai-completions",
-      "apiKey": "ACME_API_KEY",
-      "envKeys": ["ACME_API_KEY"],
-      "aliases": ["acme-ai"],
-      "models": [{ "id": "acme-coder", "name": "Acme Coder" }]
-    }
-  }
-}
-```
-
-> Removing a provider is blocked while any account uses it — edit or remove those accounts first.
-
----
-
-## Export / Import
-
-Back up or migrate your full configuration with two commands:
-
-```
-/system:export          # prompts for a path, defaults to ~/pi-account-switcher-export.json
-/system:export ~/backup.json  # export to a specific path
-```
-
-The export file contains all accounts, providers, and active-selection state as a single JSON bundle. To restore on another machine (or after a reset):
-
-```
-/system:import          # prompts for a path, defaults to ~/pi-account-switcher-export.json
-/system:import ~/backup.json  # import from a specific path
-```
-
-> **Warning:** import replaces all existing data. A confirmation prompt is shown before anything is written.
+See **USAGE.md** for full details on the activation cascade, configuration, and examples.
 
 ---
 
@@ -196,11 +81,13 @@ The export file contains all accounts, providers, and active-selection state as 
 ```json
 {
   "switchMode": "env",
+  "defaultAccountId": "claude-work",
   "accounts": [
     {
       "id": "claude-work",
       "label": "Claude — Work",
       "provider": "anthropic",
+      "dirs": ["/home/user/Development/Work"],
       "env": {
         "ANTHROPIC_API_KEY": { "type": "env", "name": "ANTHROPIC_WORK_API_KEY" }
       }
@@ -209,6 +96,7 @@ The export file contains all accounts, providers, and active-selection state as 
       "id": "openai-personal",
       "label": "OpenAI — Personal",
       "provider": "openai",
+      "dirs": ["/home/user/Projects/Client-A"],
       "env": {
         "OPENAI_API_KEY": { "type": "file", "path": "~/.keys/openai-personal.txt" }
       }
@@ -231,13 +119,18 @@ A plain string is treated as a literal; strings starting with `op://` are resolv
 
 ### State — `~/.pi/account-switcher/state.json`
 
-Tracks the selected account and model across sessions. Restored automatically on `session_start`.
+Each Pi session gets its own keyed state. No global active-account state.
 
----
+```json
+{
+  "sessions": {
+    "abc123": { "activeAccountId": "claude-work" },
+    "def456": { "activeAccountId": "openai-personal", "activeModelId": "gpt-4", "activeModelProvider": "openai" }
+  }
+}
+```
 
-## Credential Caching
-
-On switch, the extension updates `process.env`, Pi's live API-key overrides, and Pi's OAuth auth storage. If a provider still uses old credentials, run `/reload` or restart Pi.
+Legacy flat-format state (`{ "activeAccountId": "..." }`) is automatically migrated on first load.
 
 ---
 
