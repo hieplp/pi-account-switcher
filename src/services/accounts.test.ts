@@ -122,7 +122,12 @@ describe("AccountService", () => {
       const statePath = join(dir, "state.json");
 
       const store = useAccountService(accountsPath, statePath);
-      await store.addAccount({ id: "default-user", label: "Default", provider: "opencode", env: { KEY: { type: "literal", value: "secret" } } });
+      await store.addAccount({
+        id: "default-user",
+        label: "Default",
+        provider: "opencode",
+        env: { KEY: { type: "literal", value: "secret" } },
+      });
       await store.setDefaultAccountId("default-user");
 
       // New session with no state — should fall back to defaultAccountId
@@ -139,8 +144,18 @@ describe("AccountService", () => {
       const statePath = join(dir, "state.json");
 
       const store = useAccountService(accountsPath, statePath);
-      await store.addAccount({ id: "default-user", label: "Default", provider: "opencode", env: { KEY: { type: "literal", value: "secret" } } });
-      await store.addAccount({ id: "session-user", label: "Session", provider: "opencode", env: { KEY: { type: "literal", value: "secret" } } });
+      await store.addAccount({
+        id: "default-user",
+        label: "Default",
+        provider: "opencode",
+        env: { KEY: { type: "literal", value: "secret" } },
+      });
+      await store.addAccount({
+        id: "session-user",
+        label: "Session",
+        provider: "opencode",
+        env: { KEY: { type: "literal", value: "secret" } },
+      });
       await store.setDefaultAccountId("default-user");
 
       // Pre-populate session-scoped state
@@ -165,7 +180,12 @@ describe("AccountService", () => {
       const statePath = join(dir, "state.json");
 
       const store = useAccountService(accountsPath, statePath);
-      await store.addAccount({ id: "orphan", label: "Orphan", provider: "opencode", env: { KEY: { type: "literal", value: "secret" } } });
+      await store.addAccount({
+        id: "orphan",
+        label: "Orphan",
+        provider: "opencode",
+        env: { KEY: { type: "literal", value: "secret" } },
+      });
       // No setDefaultAccountId called
 
       const session = useAccountService(accountsPath, statePath);
@@ -183,8 +203,18 @@ describe("AccountService", () => {
       const statePath = join(dir, "state.json");
 
       const setup = useAccountService(accountsPath, statePath);
-      await setup.addAccount({ id: "legacy-user", label: "Legacy", provider: "opencode", env: { KEY: { type: "literal", value: "x" } } });
-      await setup.addAccount({ id: "session-user", label: "Session", provider: "opencode", env: { KEY: { type: "literal", value: "x" } } });
+      await setup.addAccount({
+        id: "legacy-user",
+        label: "Legacy",
+        provider: "opencode",
+        env: { KEY: { type: "literal", value: "x" } },
+      });
+      await setup.addAccount({
+        id: "session-user",
+        label: "Session",
+        provider: "opencode",
+        env: { KEY: { type: "literal", value: "x" } },
+      });
 
       // Pre-populate both the legacy "default" key and a session-scoped key
       const { useStateStore } = await import("../storage");
@@ -209,7 +239,12 @@ describe("AccountService", () => {
       const statePath = join(dir, "state.json");
 
       const setup = useAccountService(accountsPath, statePath);
-      await setup.addAccount({ id: "legacy-user", label: "Legacy", provider: "opencode", env: { KEY: { type: "literal", value: "x" } } });
+      await setup.addAccount({
+        id: "legacy-user",
+        label: "Legacy",
+        provider: "opencode",
+        env: { KEY: { type: "literal", value: "x" } },
+      });
 
       // Simulate the migrated-but-not-cleaned-up state
       const { useStateStore } = await import("../storage");
@@ -236,8 +271,18 @@ describe("AccountService", () => {
       const statePath = join(dir, "state.json");
 
       const setup = useAccountService(accountsPath, statePath);
-      await setup.addAccount({ id: "user-a", label: "User A", provider: "opencode", env: { KEY: { type: "literal", value: "x" } } });
-      await setup.addAccount({ id: "user-b", label: "User B", provider: "opencode", env: { KEY: { type: "literal", value: "x" } } });
+      await setup.addAccount({
+        id: "user-a",
+        label: "User A",
+        provider: "opencode",
+        env: { KEY: { type: "literal", value: "x" } },
+      });
+      await setup.addAccount({
+        id: "user-b",
+        label: "User B",
+        provider: "opencode",
+        env: { KEY: { type: "literal", value: "x" } },
+      });
 
       // Pre-populate session state (no sessions.default)
       const { useStateStore } = await import("../storage");
@@ -257,7 +302,12 @@ describe("AccountService", () => {
       const statePath = join(dir, "state.json");
 
       const store = useAccountService(accountsPath, statePath);
-      await store.addAccount({ id: "migrated-user", label: "Migrated", provider: "opencode", env: { KEY: { type: "literal" as const, value: "secret" } } });
+      await store.addAccount({
+        id: "migrated-user",
+        label: "Migrated",
+        provider: "opencode",
+        env: { KEY: { type: "literal" as const, value: "secret" } },
+      });
 
       // Pre-populate session state (simulating old format migration → "default" key)
       const { useStateStore } = await import("../storage");
@@ -286,28 +336,33 @@ describe("AccountService", () => {
     });
   });
 
-    it("deletes empty sessions.default key from previous buggy run", async () => {
-      const dir = await mkdtemp(join(tmpdir(), "account-switcher-"));
-      const accountsPath = join(dir, "accounts.json");
-      const statePath = join(dir, "state.json");
+  it("deletes empty sessions.default key from previous buggy run", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "account-switcher-"));
+    const accountsPath = join(dir, "accounts.json");
+    const statePath = join(dir, "state.json");
 
-      const store = useAccountService(accountsPath, statePath);
-      await store.addAccount({ id: "user", label: "User", provider: "opencode", env: { KEY: { type: "literal" as const, value: "x" } } });
-
-      // Simulate the bug: previous version wrote empty "default": {}
-      const { useStateStore } = await import("../storage");
-      await useStateStore(statePath).saveSession("default", {});
-
-      // Load — should delete the empty default key without error
-      const session = useAccountService(accountsPath, statePath);
-      session.setSessionKey("my-session");
-      await expect(session.load()).resolves.toBeUndefined();
-
-      // The default key should be gone from disk
-      const { readFile } = await import("node:fs/promises");
-      const raw = JSON.parse(await readFile(statePath, "utf8"));
-      expect(Object.keys(raw.sessions)).not.toContain("default");
+    const store = useAccountService(accountsPath, statePath);
+    await store.addAccount({
+      id: "user",
+      label: "User",
+      provider: "opencode",
+      env: { KEY: { type: "literal" as const, value: "x" } },
     });
+
+    // Simulate the bug: previous version wrote empty "default": {}
+    const { useStateStore } = await import("../storage");
+    await useStateStore(statePath).saveSession("default", {});
+
+    // Load — should delete the empty default key without error
+    const session = useAccountService(accountsPath, statePath);
+    session.setSessionKey("my-session");
+    await expect(session.load()).resolves.toBeUndefined();
+
+    // The default key should be gone from disk
+    const { readFile } = await import("node:fs/promises");
+    const raw = JSON.parse(await readFile(statePath, "utf8"));
+    expect(Object.keys(raw.sessions)).not.toContain("default");
+  });
 
   describe("model state isolation per session", () => {
     it("each session has independent model state", async () => {
@@ -316,7 +371,9 @@ describe("AccountService", () => {
       const statePath = join(dir, "state.json");
 
       const accounts = ["a", "b", "c"].map((name) => ({
-        id: name, label: name, provider: "opencode",
+        id: name,
+        label: name,
+        provider: "opencode",
         env: { KEY: { type: "literal" as const, value: "bar" } },
       }));
       const setup = useAccountService(accountsPath, statePath);

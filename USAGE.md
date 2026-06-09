@@ -396,6 +396,7 @@ If no session state exists and no directory matches, the extension falls back to
 ```
 
 ### Activation cascade (session start)
+
 1. **Saved session state** — account previously selected for this Pi session
 2. **CWD-based auto-select** — longest matching directory prefix
 3. **`defaultAccountId`** — config-level fallback
