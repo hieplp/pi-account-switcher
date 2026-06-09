@@ -1,4 +1,13 @@
-import { Container, fuzzyFilter, getKeybindings, Input, Spacer, Text, type Focusable, type Component } from "@earendil-works/pi-tui";
+import {
+  Container,
+  fuzzyFilter,
+  getKeybindings,
+  Input,
+  Spacer,
+  Text,
+  type Focusable,
+  type Component,
+} from "@earendil-works/pi-tui";
 import type { ThemeColor } from "@earendil-works/pi-coding-agent";
 
 /**
