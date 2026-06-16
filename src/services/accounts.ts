@@ -43,20 +43,21 @@ class AccountServiceImpl implements AccountService {
   }
 
   async load(): Promise<void> {
+    // Apply config TTL to state store before loading
+    const config = await this.store.loadConfig();
+    this.stateStore.setCleanupDays(config.stateCleanupDays ?? 30);
+
     this.accounts = await this.store.load();
     const key = this.sessionKey ?? "default";
     const state = await this.stateStore.loadSession(key);
 
-    // Cascade: session key state → defaultAccountId from config → none
+    // Session key state only — no fallback to defaultAccountId here.
+    // The full cascade (session → dirs → defaultAccountId) is in runtime.init()
+    // so dir-based matching runs before we fall back to the default.
     if (state.activeAccountId) {
       this.activeAccountId = state.activeAccountId;
       this.activeModelId = state.activeModelId;
       this.activeModelProvider = state.activeModelProvider;
-    } else {
-      const defaultId = await this.getDefaultAccountId();
-      if (defaultId && this.accounts.some((a) => a.id === defaultId)) {
-        this.activeAccountId = defaultId;
-      }
     }
 
     // Legacy cleanup (always runs): if sessions.default still exists from

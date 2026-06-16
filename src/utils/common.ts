@@ -106,7 +106,7 @@ export function findLongestMatchingDir<T extends { id: string; dirs?: string[] }
     for (const dir of dirs) {
       const resolved = dir.startsWith("~") ? dir.replace("~", homedir()) : dir;
       const normalized = resolved.replace(/\/+$/, "");
-      if (cwd.startsWith(normalized + "/") && normalized.length > bestLen) {
+      if ((cwd === normalized || cwd.startsWith(normalized + "/")) && normalized.length > bestLen) {
         bestLen = normalized.length;
         bestId = account.id;
       }

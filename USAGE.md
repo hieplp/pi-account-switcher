@@ -431,6 +431,16 @@ Each Pi session gets its own key — no global active-account state:
 
 On Pi session start, the extension derives a session key and restores that session's saved state. Sessions with no saved state fall back to CWD-based auto-select or `defaultAccountId`. Legacy flat-format state (`{ "activeAccountId": "..." }`) is automatically migrated on first load.
 
+Session entries auto-accumulate as you use Pi. To prevent unbounded growth, the extension automatically prunes entries that haven't been active in `stateCleanupDays` days (default: 30). If there are still more than 500 entries after the TTL sweep, the oldest ones are removed.
+
+Configure the TTL in `~/.pi/account-switcher/accounts.json`:
+
+```json
+{ "accounts": [...], "stateCleanupDays": 60 }
+```
+
+Set to a higher value (e.g. 90) if you frequently resume sessions from weeks ago, or a lower value (e.g. 7) for tighter cleanup. Entries without a `lastActive` timestamp (from previous versions) are automatically timestamped on first write after upgrade.
+
 ## 13. Important Note About Credential Caching
 
 The extension updates `process.env`, Pi's live runtime API-key overrides, and Pi's live OAuth auth storage when those hooks are available.

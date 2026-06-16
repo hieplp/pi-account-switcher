@@ -26,9 +26,12 @@ export default class AccountSwitcherRuntime implements AccountSwitcher {
   private lastStatusLabel: string | undefined;
   private sessionKey: string | undefined;
 
-  constructor(private readonly pi: Pick<ExtensionAPI, "registerProvider" | "setModel">) {
-    this.providerService = useProviderService(this.pi as ExtensionAPI, PROVIDERS_PATH);
-    this.accountService = useAccountService(ACCOUNTS_PATH, STATE_PATH);
+  constructor(
+    private readonly pi: Pick<ExtensionAPI, "registerProvider" | "setModel">,
+    private readonly paths?: { accounts: string; providers: string; state: string },
+  ) {
+    this.providerService = useProviderService(this.pi as ExtensionAPI, paths?.providers ?? PROVIDERS_PATH);
+    this.accountService = useAccountService(paths?.accounts ?? ACCOUNTS_PATH, paths?.state ?? STATE_PATH);
     this.modelService = useModelService(this.pi);
     this.piAuthService = usePiAuthService();
   }
@@ -98,8 +101,16 @@ export default class AccountSwitcherRuntime implements AccountSwitcher {
   }
 
   async onModelSelect(provider: string, ctx: AccountSwitcherContext): Promise<void> {
-    const matchingAccount = this.findAccountsByProvider(provider)[0];
+    const providers = this.providerService.getProviders();
+    const normalizedProvider = providerUtil.normalizeProviderWithCustom(provider, providers);
     const activeAccount = this.accountService.getActiveAccount();
+
+    // If the active account already belongs to this provider, keep it.
+    if (activeAccount && resolveAccountProvider(activeAccount, providers) === normalizedProvider) {
+      return;
+    }
+
+    const matchingAccount = this.findAccountsByProvider(provider)[0];
     if (matchingAccount && matchingAccount.id !== activeAccount?.id) {
       await this.activateAccount(matchingAccount, ctx);
     }
@@ -167,6 +178,11 @@ export default class AccountSwitcherRuntime implements AccountSwitcher {
     if (accountProvider !== currentProvider) {
       const model = await modelUtil.pickModel(ctx, account, providers, accountProvider);
       if (model) await this.applyModel(model, ctx);
+    } else {
+      // Same provider — persist current model for full session tracking
+      if (ctx.model) {
+        await this.accountService.saveActiveModel(ctx.model.id, ctx.model.provider);
+      }
     }
 
     return providerApiKey ? `provider apiKey (${providerApiKey})` : result;

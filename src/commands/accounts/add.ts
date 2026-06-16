@@ -20,7 +20,15 @@ class AddAccountCommand extends AccountCommand {
       await this.runtime.load();
       const providers = this.runtime.getProviders();
 
-      const account = await new AccountConfigBuilder(ctx.ui, providers).collect();
+      // Get all provider IDs registered in Pi from the model registry
+      const piModels = ctx.modelRegistry.getAll();
+      const piProviderIds = [...new Set(piModels.map((m) => m.provider))];
+
+      const getOAuthEntry = async (p: string) => {
+        return this.runtime.getPiAuthEntry(p);
+      };
+
+      const account = await new AccountConfigBuilder(ctx.ui, providers, piProviderIds, getOAuthEntry).collect();
       if (!account) return;
 
       await this.saveProvider(ctx, account);

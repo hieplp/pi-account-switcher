@@ -258,6 +258,8 @@ When Pi starts, the extension derives a session key from Pi's session file and r
 
 Legacy flat-format state (`{ "activeAccountId": "..." }`) is automatically migrated to the session-keyed format on first load.
 
+Session entries are automatically cleaned up: entries inactive for `stateCleanupDays` (default 30, configurable in `accounts.json`) are pruned, with a hard cap of 500 entries.
+
 ---
 
 ## Credential Caching

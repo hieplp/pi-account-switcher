@@ -71,8 +71,12 @@ class AccountStoreImpl implements AccountStore {
   }
 
   private async save(accounts: AccountConfig[]): Promise<void> {
-    const { defaultAccountId } = await this.loadConfig();
-    const config: AccountSwitcherConfig = { accounts, ...(defaultAccountId ? { defaultAccountId } : {}) };
+    const { defaultAccountId, stateCleanupDays } = await this.loadConfig();
+    const config: AccountSwitcherConfig = {
+      accounts,
+      ...(defaultAccountId ? { defaultAccountId } : {}),
+      ...(stateCleanupDays !== undefined ? { stateCleanupDays } : {}),
+    };
     await fileUtil.writePrivateJson(this.path, config);
   }
 

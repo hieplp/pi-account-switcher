@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { commonUtil, findLongestMatchingDir, providerUtil } from "../utils";
+import { commonUtil, findLongestMatchingDir, providerUtil } from "@/utils";
 
 const customProviders = [{ id: "acme", aliases: ["acme-ai"], envKeys: ["ACME_API_KEY"] }];
 
@@ -61,6 +61,17 @@ describe("providerUtil", () => {
       expect(findLongestMatchingDir(accounts as any, "/home/user/Work/project")).toBe("trailing");
     });
 
+
+    it("matches when cwd equals the configured dir exactly (not just subdirectory)", () => {
+      const accounts = [{ id: "exact", label: "Exact", dirs: ["/home/user/Work"] }];
+      expect(findLongestMatchingDir(accounts as any, "/home/user/Work")).toBe("exact");
+    });
+
+    it("matches tilde-resolved dir exactly", () => {
+      const home = require("os").homedir();
+      const accounts = [{ id: "home-match", label: "Home", dirs: ["~"] }];
+      expect(findLongestMatchingDir(accounts as any, home)).toBe("home-match");
+    });
     it("only matches proper path prefix (not substring)", () => {
       const accounts = [{ id: "prefix", label: "Prefix", dirs: ["/home/user"] }];
       expect(findLongestMatchingDir(accounts as any, "/home/username")).toBeUndefined();

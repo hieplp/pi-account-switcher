@@ -126,4 +126,95 @@ describe("AccountStore", () => {
       expect(config.accounts[0].id).toBe("test");
     });
   });
+
+  describe("stateCleanupDays", () => {
+    it("persists and reads stateCleanupDays in config", async () => {
+      const dir = await mkdtemp(join(tmpdir(), "account-switcher-"));
+      const path = join(dir, "accounts.json");
+      const store = useAccountStore(path);
+
+      await store.addAccount({
+        id: "test",
+        label: "Test",
+        provider: "anthropic",
+        env: { KEY: "secret" },
+      });
+
+      // Simulate writing stateCleanupDays to config via direct JSON manipulation
+      const { readFile, writeFile } = await import("node:fs/promises");
+      const raw = JSON.parse(await readFile(path, "utf8"));
+      raw.stateCleanupDays = 7;
+      await writeFile(path, JSON.stringify(raw));
+
+      const config = await store.loadConfig();
+      expect(config.stateCleanupDays).toBe(7);
+    });
+
+    it("defaults to 30 when stateCleanupDays is not set", async () => {
+      const dir = await mkdtemp(join(tmpdir(), "account-switcher-"));
+      const path = join(dir, "accounts.json");
+      const store = useAccountStore(path);
+
+      await store.addAccount({
+        id: "test",
+        label: "Test",
+        provider: "anthropic",
+        env: { KEY: "secret" },
+      });
+
+      const config = await store.loadConfig();
+      expect(config.stateCleanupDays).toBe(30);
+    });
+
+    it("accepts custom values like 7 and 90", async () => {
+      const dir = await mkdtemp(join(tmpdir(), "account-switcher-"));
+      const path = join(dir, "accounts.json");
+
+      // Write config with stateCleanupDays = 90
+      const { writeFile } = await import("node:fs/promises");
+      await writeFile(path, JSON.stringify({
+        accounts: [{
+          id: "test",
+          label: "Test",
+          provider: "anthropic",
+          env: { KEY: { type: "literal", value: "secret" } }
+        }],
+        stateCleanupDays: 90
+      }));
+
+      const store = useAccountStore(path);
+      const config = await store.loadConfig();
+      expect(config.stateCleanupDays).toBe(90);
+    });
+
+    it("persists stateCleanupDays when saving accounts", async () => {
+      const dir = await mkdtemp(join(tmpdir(), "account-switcher-"));
+      const path = join(dir, "accounts.json");
+      const store = useAccountStore(path);
+
+      await store.addAccount({
+        id: "test",
+        label: "Test",
+        provider: "anthropic",
+        env: { KEY: "secret" },
+      });
+
+      // Write config with stateCleanupDays = 14
+      const { readFile, writeFile } = await import("node:fs/promises");
+      let raw = JSON.parse(await readFile(path, "utf8"));
+      raw.stateCleanupDays = 14;
+      await writeFile(path, JSON.stringify(raw));
+
+      // Add another account - should preserve stateCleanupDays
+      await store.addAccount({
+        id: "test2",
+        label: "Test2",
+        provider: "openai",
+        env: { KEY: "secret2" },
+      });
+
+      const config = await store.loadConfig();
+      expect(config.stateCleanupDays).toBe(14);
+    });
+  });
 });
