@@ -65,14 +65,28 @@ export default class AccountSwitcherRuntime implements AccountSwitcher {
     await this.load();
 
     // Cascade:
+    // 0. PI_ACCOUNT_SWITCHER_ACTIVE_ID env var (from parent process)
     // 1. Session key state (handled inside accountService.load())
     // 2. CWD-based auto-select via dirs
     // 3. defaultAccountId from config
-    let selected = this.accountService.getActiveAccount();
+    let selected: AccountConfig | undefined;
+
+    // Step 0: env var from parent process (for subagent inheritance)
+    const envId = process.env.PI_ACCOUNT_SWITCHER_ACTIVE_ID;
+    if (envId) {
+      selected = this.accountService.getAccounts().find((a) => a.id === envId);
+    }
+
     if (!selected) {
+      // Step 1: session key state (restored by accountService.load())
+      selected = this.accountService.getActiveAccount();
+    }
+    if (!selected) {
+      // Step 2: CWD-based auto-select via dirs
       selected = this.findAccountForCwd(ctx.cwd);
     }
     if (!selected) {
+      // Step 3: defaultAccountId from config
       const defaultId = await this.accountService.getDefaultAccountId();
       if (defaultId) {
         selected = this.accountService.getAccounts().find((a) => a.id === defaultId);
@@ -166,6 +180,9 @@ export default class AccountSwitcherRuntime implements AccountSwitcher {
     const providers = this.providerService.getProviders();
     const providerApiKey = await this.applyProviderApiKey(account, providers);
     const result = await this.accountService.activateAccount(account, ctx, resolveAuthProvider(account, providers));
+
+    // Persist the active account ID for subagent (cross-process) inheritance
+    process.env.PI_ACCOUNT_SWITCHER_ACTIVE_ID = account.id;
 
     // piAuth accounts authenticate via a separate provider (e.g. github-copilot),
     // so use that for model lookup rather than the account's own provider field.

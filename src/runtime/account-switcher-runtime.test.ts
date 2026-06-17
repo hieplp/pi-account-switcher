@@ -154,6 +154,98 @@ describe("AccountSwitcherRuntime", () => {
       expect(runtime.getActiveAccount()).toBeUndefined();
     });
 
+    it("env var (cascade step 0) activates matching account", async () => {
+      const dir = await mkdtemp(join(tmpdir(), "runtime-cascade-"));
+      const accPath = join(dir, "accounts.json");
+      const provPath = join(dir, "providers.json");
+      const statePath = join(dir, "state.json");
+
+      const setup = useAccountService(accPath, statePath);
+      await setup.addAccount({
+        id: "work", label: "Work", provider: "anthropic",
+        piAuth: { provider: "anthropic", entry: { type: "api_key", key: "sk-test" } },
+      });
+      await setup.addAccount({
+        id: "personal", label: "Personal", provider: "opencode",
+        piAuth: { provider: "opencode", entry: { type: "api_key", key: "sk-test" } },
+      });
+
+      const oldEnv = process.env.PI_ACCOUNT_SWITCHER_ACTIVE_ID;
+      process.env.PI_ACCOUNT_SWITCHER_ACTIVE_ID = "personal";
+      try {
+        const pi = { registerProvider: () => {}, setModel: async () => true };
+        const runtime = new AccountSwitcherRuntime(pi, { accounts: accPath, providers: provPath, state: statePath });
+        const ctx = mockCtx({});
+        await runtime.init(ctx);
+        expect(runtime.getActiveAccount()?.id).toBe("personal");
+      } finally {
+        if (oldEnv === undefined) delete process.env.PI_ACCOUNT_SWITCHER_ACTIVE_ID;
+        else process.env.PI_ACCOUNT_SWITCHER_ACTIVE_ID = oldEnv;
+      }
+    });
+
+    it("env var (cascade step 0) beats session state", async () => {
+      const dir = await mkdtemp(join(tmpdir(), "runtime-cascade-"));
+      const accPath = join(dir, "accounts.json");
+      const provPath = join(dir, "providers.json");
+      const statePath = join(dir, "state.json");
+
+      const setup = useAccountService(accPath, statePath);
+      await setup.addAccount({
+        id: "env-acc", label: "Env", provider: "anthropic",
+        piAuth: { provider: "anthropic", entry: { type: "api_key", key: "sk" } },
+      });
+      await setup.addAccount({
+        id: "session-acc", label: "Session", provider: "opencode",
+        piAuth: { provider: "opencode", entry: { type: "api_key", key: "sk" } },
+      });
+
+      const { createHash } = await import("node:crypto");
+      const sessionKey = createHash("sha256").update("session-beta").digest("hex").slice(0, 12);
+      const { useStateStore } = await import("../storage");
+      await useStateStore(statePath).saveSession(sessionKey, { activeAccountId: "session-acc" });
+
+      const oldEnv = process.env.PI_ACCOUNT_SWITCHER_ACTIVE_ID;
+      process.env.PI_ACCOUNT_SWITCHER_ACTIVE_ID = "env-acc";
+      try {
+        const pi = { registerProvider: () => {}, setModel: async () => true };
+        const runtime = new AccountSwitcherRuntime(pi, { accounts: accPath, providers: provPath, state: statePath });
+        const ctx = mockCtx({ cwd: "/somewhere", sessionFile: "session-beta" });
+        await runtime.init(ctx);
+        expect(runtime.getActiveAccount()?.id).toBe("env-acc");
+      } finally {
+        if (oldEnv === undefined) delete process.env.PI_ACCOUNT_SWITCHER_ACTIVE_ID;
+        else process.env.PI_ACCOUNT_SWITCHER_ACTIVE_ID = oldEnv;
+      }
+    });
+
+    it("env var (cascade step 0) falls through when account does not exist", async () => {
+      const dir = await mkdtemp(join(tmpdir(), "runtime-cascade-"));
+      const accPath = join(dir, "accounts.json");
+      const provPath = join(dir, "providers.json");
+      const statePath = join(dir, "state.json");
+
+      const setup = useAccountService(accPath, statePath);
+      await setup.addAccount({
+        id: "real-acc", label: "Real", provider: "anthropic",
+        piAuth: { provider: "anthropic", entry: { type: "api_key", key: "sk" } },
+      });
+      await setup.setDefaultAccountId("real-acc");
+
+      const oldEnv = process.env.PI_ACCOUNT_SWITCHER_ACTIVE_ID;
+      process.env.PI_ACCOUNT_SWITCHER_ACTIVE_ID = "ghost-acc";
+      try {
+        const pi = { registerProvider: () => {}, setModel: async () => true };
+        const runtime = new AccountSwitcherRuntime(pi, { accounts: accPath, providers: provPath, state: statePath });
+        const ctx = mockCtx({});
+        await runtime.init(ctx);
+        expect(runtime.getActiveAccount()?.id).toBe("real-acc");
+      } finally {
+        if (oldEnv === undefined) delete process.env.PI_ACCOUNT_SWITCHER_ACTIVE_ID;
+        else process.env.PI_ACCOUNT_SWITCHER_ACTIVE_ID = oldEnv;
+      }
+    });
+
     it("persists session state after init so subsequent init uses it directly", async () => {
       const dir = await mkdtemp(join(tmpdir(), "runtime-cascade-"));
       const accPath = join(dir, "accounts.json");

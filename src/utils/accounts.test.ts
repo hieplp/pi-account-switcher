@@ -76,7 +76,9 @@ describe("resolveSecret", () => {
   });
 
   it("throws when env type var is not set", async () => {
-    await expect(accountUtil.resolveSecret({ type: "env", name: "DOES_NOT_EXIST_XYZ" })).rejects.toThrow(/DOES_NOT_EXIST_XYZ/);
+    await expect(accountUtil.resolveSecret({ type: "env", name: "DOES_NOT_EXIST_XYZ" })).rejects.toThrow(
+      /DOES_NOT_EXIST_XYZ/,
+    );
   });
 
   it("resolves command type via runCommand", async () => {
@@ -102,7 +104,9 @@ describe("clearAccountEnv", () => {
     process.env.TEST_OTHER = "keep";
     try {
       await accountUtil.clearAccountEnv({
-        id: "a", label: "A", provider: "test",
+        id: "a",
+        label: "A",
+        provider: "test",
         env: { TEST_CLEAR_KEY: "val" },
       });
       expect(process.env.TEST_CLEAR_KEY).toBeUndefined();
@@ -115,10 +119,9 @@ describe("clearAccountEnv", () => {
 
   it("calls removeRuntimeApiKey when no piAuth", async () => {
     const removeRuntimeApiKey = vi.fn();
-    await accountUtil.clearAccountEnv(
-      { id: "a", label: "A", provider: "anthropic" },
-      { authStorage: { removeRuntimeApiKey } } as never,
-    );
+    await accountUtil.clearAccountEnv({ id: "a", label: "A", provider: "anthropic" }, {
+      authStorage: { removeRuntimeApiKey },
+    } as never);
     expect(removeRuntimeApiKey).toHaveBeenCalledWith("anthropic");
   });
 });
