@@ -136,6 +136,8 @@ class AccountServiceImpl implements AccountService {
       applied = accountUtil.applyResolvedAccountEnv(account, resolved, ctx.modelRegistry, authProvider);
     }
     this.activeAccountId = account.id;
+    // Persist active account ID for subagent (cross-process) inheritance
+    process.env.PI_ACCOUNT_SWITCHER_ACTIVE_ID = account.id;
     await this.flushState();
     uiUtil.setAccountStatus(ctx.ui, account.label);
     if (account.piAuth) return "via OAuth";

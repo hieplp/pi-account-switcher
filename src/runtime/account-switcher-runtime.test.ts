@@ -1,17 +1,20 @@
 import { mkdtemp } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir, homedir } from "node:os";
-import { describe, expect, it, beforeAll, vi } from "vitest";
+import { describe, expect, it, beforeAll, afterEach, vi } from "vitest";
 import AccountSwitcherRuntime from "./account-switcher-runtime";
 import { useAccountService } from "@/services";
 import type { AccountSwitcherContext } from "@/types";
 
 /** Build a minimal mock of AccountSwitcherContext for testing init(). */
-function mockCtx(overrides: {
-  cwd?: string;
-  sessionFile?: string;
-}): AccountSwitcherContext {
-  const authStorage = { set: () => {}, reload: () => {}, setRuntimeApiKey: () => {}, removeRuntimeApiKey: () => {}, get: () => undefined };
+function mockCtx(overrides: { cwd?: string; sessionFile?: string }): AccountSwitcherContext {
+  const authStorage = {
+    set: () => {},
+    reload: () => {},
+    setRuntimeApiKey: () => {},
+    removeRuntimeApiKey: () => {},
+    get: () => undefined,
+  };
   return {
     cwd: overrides.cwd ?? homedir(),
     hasUI: false,
@@ -28,14 +31,15 @@ function mockCtx(overrides: {
     modelRegistry: { authStorage, find: () => undefined } as any,
     model: undefined,
     sessionManager:
-      overrides.sessionFile !== undefined
-        ? ({ getSessionFile: () => overrides.sessionFile } as any)
-        : undefined,
+      overrides.sessionFile !== undefined ? ({ getSessionFile: () => overrides.sessionFile } as any) : undefined,
   } as any;
 }
 
 describe("AccountSwitcherRuntime", () => {
   describe("init cascade", () => {
+  afterEach(() => {
+    delete process.env.PI_ACCOUNT_SWITCHER_ACTIVE_ID;
+  });
     it("uses session state when it exists (beats dir matching)", async () => {
       const dir = await mkdtemp(join(tmpdir(), "runtime-cascade-"));
       const accPath = join(dir, "accounts.json");
@@ -162,11 +166,15 @@ describe("AccountSwitcherRuntime", () => {
 
       const setup = useAccountService(accPath, statePath);
       await setup.addAccount({
-        id: "work", label: "Work", provider: "anthropic",
+        id: "work",
+        label: "Work",
+        provider: "anthropic",
         piAuth: { provider: "anthropic", entry: { type: "api_key", key: "sk-test" } },
       });
       await setup.addAccount({
-        id: "personal", label: "Personal", provider: "opencode",
+        id: "personal",
+        label: "Personal",
+        provider: "opencode",
         piAuth: { provider: "opencode", entry: { type: "api_key", key: "sk-test" } },
       });
 
@@ -192,11 +200,15 @@ describe("AccountSwitcherRuntime", () => {
 
       const setup = useAccountService(accPath, statePath);
       await setup.addAccount({
-        id: "env-acc", label: "Env", provider: "anthropic",
+        id: "env-acc",
+        label: "Env",
+        provider: "anthropic",
         piAuth: { provider: "anthropic", entry: { type: "api_key", key: "sk" } },
       });
       await setup.addAccount({
-        id: "session-acc", label: "Session", provider: "opencode",
+        id: "session-acc",
+        label: "Session",
+        provider: "opencode",
         piAuth: { provider: "opencode", entry: { type: "api_key", key: "sk" } },
       });
 
@@ -227,7 +239,9 @@ describe("AccountSwitcherRuntime", () => {
 
       const setup = useAccountService(accPath, statePath);
       await setup.addAccount({
-        id: "real-acc", label: "Real", provider: "anthropic",
+        id: "real-acc",
+        label: "Real",
+        provider: "anthropic",
         piAuth: { provider: "anthropic", entry: { type: "api_key", key: "sk" } },
       });
       await setup.setDefaultAccountId("real-acc");
@@ -305,10 +319,31 @@ describe("AccountSwitcherRuntime", () => {
       await accountService.load();
 
       const pi = { registerProvider: vi.fn(), setModel: vi.fn().mockResolvedValue(true) };
-      const runtime = new AccountSwitcherRuntime(pi as never, { accounts: accountsPath, providers: providersPath, state: statePath });
-      const bobCtx = { ...mockCtx({}), model: { provider: "opencode-go" as const, id: "dummy", name: "dummy", api: "opencode", baseUrl: "https://api.opencode.ai", reasoning: false, input: ["text" as const], cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }, contextWindow: 128000, maxTokens: 16384 } };
+      const runtime = new AccountSwitcherRuntime(pi as never, {
+        accounts: accountsPath,
+        providers: providersPath,
+        state: statePath,
+      });
+      const bobCtx = {
+        ...mockCtx({}),
+        model: {
+          provider: "opencode-go" as const,
+          id: "dummy",
+          name: "dummy",
+          api: "opencode",
+          baseUrl: "https://api.opencode.ai",
+          reasoning: false,
+          input: ["text" as const],
+          cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+          contextWindow: 128000,
+          maxTokens: 16384,
+        },
+      };
       await runtime.load();
-      await runtime.activateAccount({ id: "bob", label: "bob", provider: "opencode-go", env: { KEY: { type: "literal" as const, value: "bob" } } }, bobCtx);
+      await runtime.activateAccount(
+        { id: "bob", label: "bob", provider: "opencode-go", env: { KEY: { type: "literal" as const, value: "bob" } } },
+        bobCtx,
+      );
 
       expect(runtime.getActiveAccount()?.id).toBe("bob");
 
