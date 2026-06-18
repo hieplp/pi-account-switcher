@@ -109,7 +109,7 @@ To add another OAuth account for the same provider, run `/login` again with the 
 Switch OAuth accounts with:
 
 ```txt
-/accounts:list
+/accounts:switch
 ```
 
 OAuth credentials are captured from Pi's auth file:
@@ -275,10 +275,13 @@ A plain string is treated as a literal value, except strings beginning with `op:
 
 ## 9. Commands
 
-### List accounts
+### Switch accounts
 
 ```txt
-/accounts:list
+/accounts:switch       # interactive picker from all accounts
+/accounts:switch <id>  # activate by ID directly (agent-facing)
+/accounts:peers        # picker from same-provider accounts
+/accounts:subagent     # set account for next spawned subagent
 ```
 
 ### Import current Pi OAuth login
@@ -352,12 +355,12 @@ Typical usage:
 3. Later, switch accounts:
 
    ```txt
-   /accounts:list
+   /accounts:switch
    ```
 
 Alternative manual config flow: edit `~/.pi/account-switcher/accounts.json` directly, then reload Pi:
 
-6. If needed, reload Pi runtime:
+1. If needed, reload Pi runtime:
 
    ```txt
    /reload
@@ -458,7 +461,7 @@ Run `/accounts:add` to create one interactively, or create `~/.pi/account-switch
 Run explicitly:
 
 ```txt
-/accounts:list
+/accounts:switch
 ```
 
 Also check that account `provider` values match supported providers:
