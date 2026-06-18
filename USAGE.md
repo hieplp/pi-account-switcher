@@ -191,8 +191,8 @@ Example config:
 
 ```json
 {
-  "switchMode": "env",
   "defaultAccountId": "claude-work",
+  "stateCleanupDays": 30,
   "accounts": [
     {
       "id": "claude-work",
@@ -464,14 +464,7 @@ Run explicitly:
 /accounts:switch
 ```
 
-Also check that account `provider` values match supported providers:
-
-- `anthropic` / `claude`
-- `openai`
-- `openai-codex` / `codex`
-- `google` / `gemini`
-- `xai`
-- `openrouter`
+Also check that account `provider` values match a supported built-in provider or a custom provider added via `/providers:add`. Built-in providers include anthropic, openai, openai-codex, google, xai, openrouter, opencode, opencode-go, github-copilot, amazon-bedrock, and others. Use the `list_accounts` tool or check `@/constants/providers.ts` for the full list.
 
 ### Secret resolves empty
 
