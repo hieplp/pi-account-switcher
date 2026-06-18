@@ -7,6 +7,7 @@ import { useOAuthImportCommand } from "./oauth";
 import { useRemoveAccountCommand } from "./remove";
 import { useSwitchAccountCommand } from "./switch";
 import { useSubagentAccountCommand } from "./subagent";
+import { useDefaultAccountCommand } from "./default";
 import { usePeersCommand } from "./peers";
 import { useSetSubagentAccountTool } from "./set-subagent-account";
 import { useVerifyAccountsCommand } from "./verify";
@@ -20,6 +21,7 @@ const useAccountCommands = (pi: ExtensionAPI, runtime: AccountSwitcher) => {
   useSwitchAccountCommand(pi, runtime);
   useSubagentAccountCommand(pi, runtime);
   useSetSubagentAccountTool(pi, runtime);
+  useDefaultAccountCommand(pi, runtime);
   usePeersCommand(pi, runtime);
   useVerifyAccountsCommand(pi, runtime);
 };
