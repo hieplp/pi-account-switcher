@@ -32,6 +32,7 @@ export const useSetSubagentAccountTool = (pi: ExtensionAPI, runtime: AccountSwit
         delete process.env.PI_ACCOUNT_SWITCHER_ACTIVE_ID;
         return {
           content: [{ type: "text", text: "Subagent override cleared. Subagents will inherit the parent's active account." }],
+          details: {},
         };
       }
 
@@ -41,6 +42,7 @@ export const useSetSubagentAccountTool = (pi: ExtensionAPI, runtime: AccountSwit
         return {
           content: [{ type: "text", text: `Account not found: "${params.id}". Use the list_accounts tool to see available accounts.` }],
           isError: true,
+          details: {},
         };
       }
 
@@ -48,12 +50,14 @@ export const useSetSubagentAccountTool = (pi: ExtensionAPI, runtime: AccountSwit
         process.env.PI_ACCOUNT_SWITCHER_NEXT_ID = params.id;
         return {
           content: [{ type: "text", text: `One-shot set to: ${match.label} (${params.id}). The next subagent will use this account, then revert.` }],
+          details: {},
         };
       }
 
       process.env.PI_ACCOUNT_SWITCHER_ACTIVE_ID = params.id;
       return {
         content: [{ type: "text", text: `Persistent override set to: ${match.label} (${params.id}). All subagents will use this account until cleared.` }],
+        details: {},
       };
     },
   });

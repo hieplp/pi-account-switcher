@@ -42,6 +42,7 @@ export const useListAccountsTool = (pi: ExtensionAPI, runtime: AccountSwitcher) 
       const output = formatAccountList(accounts, active);
       return {
         content: [{ type: "text", text: output }],
+        details: {},
       };
     },
   });

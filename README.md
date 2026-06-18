@@ -66,13 +66,14 @@ The local commands will be registered as `/dev:accounts:list`, `/dev:accounts:ad
 
 | Command            | Description                                                     |
 | ------------------ | --------------------------------------------------------------- |
-| `/accounts:add`    | Add a new account interactively                                 |
-| `/accounts:list`   | List all accounts and activate the selected one                 |
-| `/accounts:switch` | Switch to another account within the current provider           |
-| `/accounts:edit`   | Edit label, provider, id, or credential source                  |
-| `/accounts:remove` | Delete an account                                               |
-| `/accounts:oauth`  | Import the current Pi `/login` OAuth session as a named account |
-| `/accounts:dirs`   | Manage working directories for CWD-based auto-select            |
+| `/accounts:add`     | Add a new account interactively                                 |
+| `/accounts:switch`  | Switch to any account (interactive picker or by ID)            |
+| `/accounts:peers`   | Switch to another account within the current provider          |
+| `/accounts:subagent`| Set account for the next spawned subagent                      |
+| `/accounts:edit`    | Edit label, provider, id, or credential source                  |
+| `/accounts:remove`  | Delete an account                                               |
+| `/accounts:oauth`   | Import the current Pi `/login` OAuth session as a named account |
+| `/accounts:dirs`    | Manage working directories for CWD-based auto-select             |
 
 ### Providers
 
@@ -134,7 +135,7 @@ Complete browser/device login, then:
 /accounts:oauth
 ```
 
-Give it a label like `Claude — Work`. Repeat for as many accounts as you need — each gets its own saved credentials. Switch between them any time with `/accounts:list`.
+Give it a label like `Claude — Work`. Repeat for as many accounts as you need — each gets its own saved credentials. Switch between them any time with `/accounts:switch`.
 
 OAuth credentials are read from `~/.pi/agent/auth.json` and written back to Pi's live auth storage on switch.
 

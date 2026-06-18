@@ -6,7 +6,7 @@ export const COMMANDS = {
     },
     list: {
       name: "accounts:list",
-      description: "List configured accounts and activate the selected account",
+      description: "(agent tool: use list_accounts tool instead for structured output",
     },
     edit: {
       name: "accounts:edit",

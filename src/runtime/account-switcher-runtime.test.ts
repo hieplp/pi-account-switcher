@@ -260,6 +260,46 @@ describe("AccountSwitcherRuntime", () => {
       }
     });
 
+    it("NEXT_ID takes priority over ACTIVE_ID and is consumed after one init", async () => {
+      const dir = await mkdtemp(join(tmpdir(), "runtime-cascade-"));
+      const accPath = join(dir, "accounts.json");
+      const provPath = join(dir, "providers.json");
+      const statePath = join(dir, "state.json");
+
+      const setup = useAccountService(accPath, statePath);
+      await setup.addAccount({
+        id: "next-acc", label: "Next", provider: "anthropic",
+        piAuth: { provider: "anthropic", entry: { type: "api_key", key: "sk" } },
+      });
+      await setup.addAccount({
+        id: "active-acc", label: "Active", provider: "opencode",
+        piAuth: { provider: "opencode", entry: { type: "api_key", key: "sk" } },
+      });
+
+      // Set both env vars — NEXT_ID should win
+      const oldNext = process.env.PI_ACCOUNT_SWITCHER_NEXT_ID;
+      const oldActive = process.env.PI_ACCOUNT_SWITCHER_ACTIVE_ID;
+      process.env.PI_ACCOUNT_SWITCHER_NEXT_ID = "next-acc";
+      process.env.PI_ACCOUNT_SWITCHER_ACTIVE_ID = "active-acc";
+      try {
+        const pi = { registerProvider: () => {}, setModel: async () => true };
+        const runtime = new AccountSwitcherRuntime(pi, { accounts: accPath, providers: provPath, state: statePath });
+        const ctx = mockCtx({});
+        await runtime.init(ctx);
+
+        // NEXT_ID consumed, next-acc activated
+        expect(runtime.getActiveAccount()?.id).toBe("next-acc");
+        // NEXT_ID should be deleted after consumption
+        expect(process.env.PI_ACCOUNT_SWITCHER_NEXT_ID).toBeUndefined();
+        // ACTIVE_ID is also set to the activated account (side effect of activateAccount)
+      } finally {
+        if (oldNext === undefined) delete process.env.PI_ACCOUNT_SWITCHER_NEXT_ID;
+        else process.env.PI_ACCOUNT_SWITCHER_NEXT_ID = oldNext;
+        if (oldActive === undefined) delete process.env.PI_ACCOUNT_SWITCHER_ACTIVE_ID;
+        else process.env.PI_ACCOUNT_SWITCHER_ACTIVE_ID = oldActive;
+      }
+    });
+
     it("persists session state after init so subsequent init uses it directly", async () => {
       const dir = await mkdtemp(join(tmpdir(), "runtime-cascade-"));
       const accPath = join(dir, "accounts.json");
