@@ -1,28 +1,28 @@
 import { describe, expect, it, vi } from "vitest";
-import { useSetSubagentAccountTool } from "./set-subagent-account";
+import { useSetSubagentAccountTool, SET_SUBAGENT_ACCOUNT_TOOL } from "./set-subagent-account";
 
 describe("set_subagent_account tool", () => {
-  it("sets PI_ACCOUNT_SWITCHER_ACTIVE_ID in process.env", () => {
-    const notify = vi.fn();
-    const runtime = {
-      getAccounts: () => [{ id: "pxs-hack", label: "PXS", provider: "opencode-go" }],
-    } as any;
+  function makeRuntime(accounts: any[]) {
+    return { getAccounts: () => accounts } as any;
+  }
+
+  function captureTool() {
     const pi = { registerTool: vi.fn() } as any;
+    return pi;
+  }
 
-    useSetSubagentAccountTool(pi, runtime);
+  it("registers the tool with correct name", () => {
+    const pi = captureTool();
+    useSetSubagentAccountTool(pi, makeRuntime([]));
     expect(pi.registerTool).toHaveBeenCalledTimes(1);
-
-    const toolDef = pi.registerTool.mock.calls[0][0];
-    expect(toolDef.name).toBe("set_subagent_account");
-    expect(toolDef.parameters).toBeDefined();
+    expect(pi.registerTool.mock.calls[0][0].name).toBe(SET_SUBAGENT_ACCOUNT_TOOL);
   });
 
-  it("clears env var when called without account", () => {
-    const pi = { registerTool: vi.fn() } as any;
-    const runtime = { getAccounts: () => [] } as any;
-
-    useSetSubagentAccountTool(pi, runtime);
-    const toolDef = pi.registerTool.mock.calls[0][0];
-    expect(toolDef).toBeDefined();
+  it("has id and oneshot parameters", () => {
+    const pi = captureTool();
+    useSetSubagentAccountTool(pi, makeRuntime([]));
+    const params = pi.registerTool.mock.calls[0][0].parameters;
+    expect(params.properties?.id).toBeDefined();
+    expect(params.properties?.oneshot).toBeDefined();
   });
 });
