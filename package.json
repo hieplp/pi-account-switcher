@@ -45,6 +45,7 @@
     "@earendil-works/pi-coding-agent": "latest",
     "@types/node": "latest",
     "prettier": "^3.8.3",
+    "typebox": "^1.2.14",
     "typescript": "latest",
     "vitest": "latest"
   },
