@@ -72,9 +72,18 @@ export default class AccountSwitcherRuntime implements AccountSwitcher {
     let selected: AccountConfig | undefined;
 
     // Step 0: env var from parent process (for subagent inheritance)
-    const envId = process.env.PI_ACCOUNT_SWITCHER_ACTIVE_ID;
-    if (envId) {
-      selected = this.accountService.getAccounts().find((a) => a.id === envId);
+    // PI_ACCOUNT_SWITCHER_NEXT_ID is a one-shot override (consumed after first read)
+    // PI_ACCOUNT_SWITCHER_ACTIVE_ID is the persistent inheritance from the parent
+    const nextId = process.env.PI_ACCOUNT_SWITCHER_NEXT_ID;
+    if (nextId) {
+      delete process.env.PI_ACCOUNT_SWITCHER_NEXT_ID;
+      selected = this.accountService.getAccounts().find((a) => a.id === nextId);
+    }
+    if (!selected) {
+      const envId = process.env.PI_ACCOUNT_SWITCHER_ACTIVE_ID;
+      if (envId) {
+        selected = this.accountService.getAccounts().find((a) => a.id === envId);
+      }
     }
 
     if (!selected) {

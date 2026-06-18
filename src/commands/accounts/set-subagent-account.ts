@@ -9,9 +9,11 @@ export const useSetSubagentAccountTool = (pi: ExtensionAPI, runtime: AccountSwit
     name: SET_SUBAGENT_ACCOUNT_TOOL,
     label: "Set Subagent Account",
     description:
-      "Set the account to use for the next spawned subagent, without affecting the current session. " +
-      "Provide the account ID from list_accounts. The next subagent will use this account's credentials and model. " +
-      "Pass an empty string to clear the override and let subagents inherit the parent's active account.",
+      "Set the account for the NEXT subagent only (one-shot override). " +
+      "Does not affect the current session. The next subagent spawned " +
+      "will use this account's credentials; subsequent subagents inherit " +
+      "the parent's active account again. " +
+      "Provide the account ID from list_accounts. Pass empty string to clear.",
     promptSnippet: "Set the account for the next subagent",
     promptGuidelines: [
       "Use set_subagent_account before spawning a subagent when you need it to use a specific account.",
@@ -22,9 +24,9 @@ export const useSetSubagentAccountTool = (pi: ExtensionAPI, runtime: AccountSwit
     }),
     execute: async (_toolCallId, params: { id: string }, _signal, _onUpdate, _ctx) => {
       if (!params.id) {
-        delete process.env.PI_ACCOUNT_SWITCHER_ACTIVE_ID;
+        delete process.env.PI_ACCOUNT_SWITCHER_NEXT_ID;
         return {
-          content: [{ type: "text", text: "Subagent account override cleared. Subagents will inherit the parent's active account." }],
+          content: [{ type: "text", text: "One-shot override cleared. Subagents will inherit the parent's active account." }],
         };
       }
 
@@ -36,10 +38,9 @@ export const useSetSubagentAccountTool = (pi: ExtensionAPI, runtime: AccountSwit
           isError: true,
         };
       }
-
-      process.env.PI_ACCOUNT_SWITCHER_ACTIVE_ID = params.id;
+      process.env.PI_ACCOUNT_SWITCHER_NEXT_ID = params.id;
       return {
-        content: [{ type: "text", text: `Subagent account set to: ${match.label} (${params.id}). Next subagent spawned will use this account.` }],
+        content: [{ type: "text", text: `One-shot override set to: ${match.label} (${params.id}). The next subagent spawned will use this account and then revert to parent's.` }],
       };
     },
   });
