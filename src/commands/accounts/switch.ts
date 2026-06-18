@@ -2,7 +2,7 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { AccountSwitcher } from "@/runtime";
 import type { AccountSwitcherContext } from "@/types";
 import { COMMANDS } from "@/constants";
-import { commandUtil, errorUtil, providerUtil } from "@/utils";
+import { errorUtil } from "@/utils";
 import { AccountCommand } from "./shared";
 
 export const useSwitchAccountCommand = (pi: ExtensionAPI, runtime: AccountSwitcher) => {
@@ -14,38 +14,30 @@ class SwitchAccountCommand extends AccountCommand {
     super(pi, runtime, COMMANDS.accounts.switch);
   }
 
-  async handler(ctx: AccountSwitcherContext): Promise<void> {
+  async handler(ctx: AccountSwitcherContext, args?: string): Promise<void> {
     try {
       await this.runtime.load();
 
-      const active = this.runtime.getActiveAccount();
-      if (!active) {
-        ctx.ui.notify(
-          `No active account. Use ${commandUtil.name(COMMANDS.accounts.list.name)} to activate one first.`,
-          "info",
-        );
+      // With args: activate by ID directly (agent-facing, any provider)
+      if (args) {
+        const account = this.runtime.getAccounts().find((a) => a.id === args.trim());
+        if (!account) {
+          ctx.ui.notify(`Account not found: "${args.trim()}". Use the list_accounts tool to see available accounts.`, "error");
+          return;
+        }
+        const applied = await this.runtime.activateAccount(account, ctx);
+        ctx.ui.notify(`Switched to ${account.label} (${applied}).`, "info");
         return;
       }
 
-      const providers = this.runtime.getProviders();
-      const normalizedActive = providerUtil.normalizeProviderWithCustom(
-        active.piAuth?.provider ?? active.provider,
-        providers,
-      );
-      const peers = this.runtime
-        .getAccounts()
-        .filter(
-          (a) =>
-            providerUtil.normalizeProviderWithCustom(a.piAuth?.provider ?? a.provider, providers) ===
-              normalizedActive && a.id !== active.id,
-        );
-
-      if (peers.length === 0) {
-        ctx.ui.notify(`No other accounts for provider "${active.provider}".`, "info");
+      // Without args: interactive picker from all accounts
+      const accounts = this.runtime.getAccounts();
+      if (accounts.length === 0) {
+        ctx.ui.notify("No accounts configured. Use accounts:add to create one.", "info");
         return;
       }
 
-      const account = await this.pickGroupedAccount(ctx, peers, `Switch account (${active.provider})`);
+      const account = await this.pickGroupedAccount(ctx, accounts, "Pick account to activate");
       if (!account) return;
 
       const applied = await this.runtime.activateAccount(account, ctx);
