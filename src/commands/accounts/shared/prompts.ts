@@ -1,7 +1,7 @@
 import type { ExtensionUIContext } from "@earendil-works/pi-coding-agent";
-import type { AccountConfig, ProviderConfig, SecretSource } from "@/types";
+import type { AccountConfig, PiAuthEntry, ProviderConfig, SecretSource } from "@/types";
 import { commonUtil, providerUtil, uiUtil } from "@/utils";
-import { ACCOUNTS_PATH } from "@/constants";
+import { ACCOUNTS_PATH, OAUTH_PROVIDER_IDS } from "@/constants";
 
 export const SECRET_SOURCE_CHOICES = {
   literal: "Paste API key now (stored in config)",
@@ -25,6 +25,8 @@ export class AccountConfigBuilder {
   constructor(
     private readonly ui: ExtensionUIContext,
     private readonly customProviders: ProviderConfig[] = [],
+    private readonly piProviderIds: string[] = [],
+    private readonly getOAuthEntry?: (provider: string) => Promise<PiAuthEntry | undefined>,
     original?: Partial<AccountConfig>,
   ) {
     this.prompt = uiUtil.prompt(ui);
@@ -37,7 +39,7 @@ export class AccountConfigBuilder {
   }
 
   async withProvider(): Promise<this> {
-    const choices = providerUtil.providerChoices(this.customProviders);
+    const choices = providerUtil.providerChoices(this.customProviders, this.piProviderIds);
     const choice = await uiUtil.filteredSelect(this.ui, "Provider", choices);
     if (!choice) return this;
 
@@ -65,14 +67,22 @@ export class AccountConfigBuilder {
   }
 
   async withId(): Promise<this> {
-    const suggested = commonUtil.slugify(this.config.label ?? "");
-    const hint = this.config.id ?? suggested;
-    const id = (await this.prompt("Account id", hint).asText()) || hint;
-    if (!id) {
-      throw new Error("Account id is required");
+    // Auto-generate ID from label in add mode to reduce UX friction
+    if (!this.config.id) {
+      const suggested = commonUtil.slugify(this.config.label ?? "");
+      if (suggested) {
+        this.config.id = suggested;
+        return this;
+      }
+      // Fallback: prompt when label produces empty slug
+      const id = (await this.prompt("Account id", "account").asText()) || "account";
+      if (!id) {
+        throw new Error("Account id is required");
+      }
+      this.config.id = id;
+      return this;
     }
-    this.config.id = id;
-
+    // Edit mode: keep existing id
     return this;
   }
 
@@ -119,6 +129,21 @@ export class AccountConfigBuilder {
         }
       } else {
         // Has existing credentials — fall through to let user choose "keep current" or update
+      }
+    }
+
+    // OAuth-capable provider: check if Pi has stored credentials
+    if (!hasExistingCredentials && this.getOAuthEntry && (OAUTH_PROVIDER_IDS as readonly string[]).includes(provider)) {
+      const entry = await this.getOAuthEntry(provider);
+      if (entry) {
+        const useOAuth = await this.ui.confirm(
+          "Import Pi OAuth?",
+          `Pi has OAuth credentials for ${provider}. Import and use them for this account?`,
+        );
+        if (useOAuth) {
+          this.config.piAuth = { provider, entry };
+          return this;
+        }
       }
     }
 

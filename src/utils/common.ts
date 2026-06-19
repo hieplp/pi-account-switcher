@@ -1,4 +1,5 @@
 import { exec, execFile } from "node:child_process";
+import { homedir } from "node:os";
 import { promisify } from "node:util";
 
 const execAsync = promisify(exec);
@@ -87,3 +88,29 @@ export const commonUtil = {
     return results;
   },
 };
+
+/**
+ * Find the account whose dirs contain the longest prefix of cwd.
+ * Returns the account id, or undefined if no match.
+ * On tie (same dir length on two accounts), first-in-array wins.
+ */
+export function findLongestMatchingDir<T extends { id: string; dirs?: string[] }>(
+  accounts: T[],
+  cwd: string,
+): string | undefined {
+  let bestId: string | undefined;
+  let bestLen = -1;
+  for (const account of accounts) {
+    const dirs = account.dirs;
+    if (!dirs || dirs.length === 0) continue;
+    for (const dir of dirs) {
+      const resolved = dir.startsWith("~") ? dir.replace("~", homedir()) : dir;
+      const normalized = resolved.replace(/\/+$/, "");
+      if ((cwd === normalized || cwd.startsWith(normalized + "/")) && normalized.length > bestLen) {
+        bestLen = normalized.length;
+        bestId = account.id;
+      }
+    }
+  }
+  return bestId;
+}

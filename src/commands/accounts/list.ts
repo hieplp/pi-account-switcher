@@ -1,31 +1,49 @@
+import { Type } from "typebox";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { AccountSwitcher } from "@/runtime";
-import type { AccountSwitcherContext } from "@/types";
-import { COMMANDS } from "@/constants";
-import { errorUtil } from "@/utils";
-import { AccountCommand } from "./shared";
+import type { AccountConfig } from "@/types";
 
-export const useListAccountsCommand = (pi: ExtensionAPI, runtime: AccountSwitcher) => {
-  new ListAccountsCommand(pi, runtime).register();
-};
+/** Tool name for agent-facing account discovery */
+export const LIST_ACCOUNTS_TOOL = "list_accounts";
 
-class ListAccountsCommand extends AccountCommand {
-  constructor(pi: ExtensionAPI, runtime: AccountSwitcher) {
-    super(pi, runtime, COMMANDS.accounts.list);
-  }
+/**
+ * Format a list of accounts as structured text for agent consumption.
+ * Output format: `id | label | provider | status` (one line per account, sorted by label).
+ */
+export function formatAccountList(accounts: AccountConfig[], active?: AccountConfig): string {
+  if (accounts.length === 0) return "No accounts configured.";
 
-  async handler(ctx: AccountSwitcherContext): Promise<void> {
-    try {
-      const accounts = await this.loadAccounts(ctx);
-      if (!accounts) return;
-
-      const account = await this.pickGroupedAccount(ctx, accounts, "Pick account to activate");
-      if (!account) return;
-
-      const applied = await this.runtime.activateAccount(account, ctx);
-      ctx.ui.notify(`Switched to ${account.label} (${applied}).`, "info");
-    } catch (error) {
-      ctx.ui.notify(`Failed to list accounts: ${errorUtil.format(error)}`, "error");
-    }
-  }
+  const sorted = [...accounts].sort((a, b) => a.label.localeCompare(b.label));
+  return sorted
+    .map((account) => {
+      const status = active && active.id === account.id ? "active" : "inactive";
+      return `${account.id} | ${account.label} | ${account.provider} | ${status}`;
+    })
+    .join("\n");
 }
+
+export const useListAccountsTool = (pi: ExtensionAPI, runtime: AccountSwitcher) => {
+  pi.registerTool({
+    name: LIST_ACCOUNTS_TOOL,
+    label: "List Accounts",
+    description:
+      "List all configured accounts. Returns ID, label, provider, and active/inactive status for each account. " +
+      "Use the ID with accounts:switch <id> to activate a specific account.",
+    promptSnippet: "List my configured accounts",
+    promptGuidelines: [
+      "Use list_accounts when the user asks what accounts are configured or wants to switch accounts.",
+      "The output shows one line per account: id | label | provider | status.",
+    ],
+    parameters: Type.Object({}),
+    execute: async (_toolCallId, _params, _signal, _onUpdate, _ctx) => {
+      await runtime.load();
+      const accounts = runtime.getAccounts();
+      const active = runtime.getActiveAccount();
+      const output = formatAccountList(accounts, active);
+      return {
+        content: [{ type: "text", text: output }],
+        details: {},
+      };
+    },
+  });
+};

@@ -109,7 +109,7 @@ To add another OAuth account for the same provider, run `/login` again with the 
 Switch OAuth accounts with:
 
 ```txt
-/accounts:list
+/accounts:switch
 ```
 
 OAuth credentials are captured from Pi's auth file:
@@ -191,12 +191,14 @@ Example config:
 
 ```json
 {
-  "switchMode": "env",
+  "defaultAccountId": "claude-work",
+  "stateCleanupDays": 30,
   "accounts": [
     {
       "id": "claude-work",
       "label": "Claude — Work",
       "provider": "anthropic",
+      "dirs": ["/home/user/Development/Work"],
       "env": {
         "ANTHROPIC_API_KEY": { "type": "env", "name": "ANTHROPIC_WORK_API_KEY" }
       }
@@ -273,26 +275,13 @@ A plain string is treated as a literal value, except strings beginning with `op:
 
 ## 9. Commands
 
-### Pick account for current provider
+### Switch accounts
 
 ```txt
-/accounts:list
-```
-
-The extension tries to detect the current model provider and shows matching accounts.
-
-### Pick account for a specific provider
-
-```txt
-/accounts:list
-```
-
-Useful if Pi cannot detect the active provider.
-
-### List accounts
-
-```txt
-/accounts:list
+/accounts:switch       # interactive picker from all accounts
+/accounts:switch <id>  # activate by ID directly (agent-facing)
+/accounts:peers        # picker from same-provider accounts
+/accounts:subagent     # set account for next spawned subagent
 ```
 
 ### Import current Pi OAuth login
@@ -366,44 +355,102 @@ Typical usage:
 3. Later, switch accounts:
 
    ```txt
-   /accounts:list
+   /accounts:switch
    ```
 
 Alternative manual config flow: edit `~/.pi/account-switcher/accounts.json` directly, then reload Pi:
 
-6. If needed, reload Pi runtime:
+1. If needed, reload Pi runtime:
 
    ```txt
    /reload
    ```
 
-## 11. State Persistence
+## 11. Directory-based Auto-Select
 
-Selected accounts are saved at:
+The extension can automatically activate the right account based on your current working directory.
+
+### `dirs` on accounts
+
+Add directory paths to an account in `accounts.json`. The longest matching prefix of the current working directory wins. On tie, the first account in the array wins.
+
+```json
+{
+  "id": "claude-work",
+  "label": "Claude — Work",
+  "provider": "anthropic",
+  "dirs": ["/home/user/Development/Work"],
+  "env": {
+    "ANTHROPIC_API_KEY": { "type": "env", "name": "ANTHROPIC_WORK_API_KEY" }
+  }
+}
+```
+
+### `defaultAccountId` config fallback
+
+If no session state exists and no directory matches, the extension falls back to `defaultAccountId` at the top of `accounts.json`:
+
+```json
+{
+  "switchMode": "env",
+  "defaultAccountId": "claude-work",
+  "accounts": [...]
+}
+```
+
+### Activation cascade (session start)
+
+1. **Saved session state** — account previously selected for this Pi session
+2. **CWD-based auto-select** — longest matching directory prefix
+3. **`defaultAccountId`** — config-level fallback
+4. **None** — no account activated until you pick one
+
+### Manage dirs with `/accounts:dirs`
+
+The `/accounts:dirs` command opens an interactive wizard. When an active account and current working directory are detected, it offers **Auto-save** (one-step: saves current dir to active account) and **Manual** (pick account, then add via recursive directory browser or remove configured dirs).
+
+Dirs are stored per account in `~/.pi/account-switcher/accounts.json`.
+
+---
+
+## 12. State Persistence
+
+Selected accounts are saved **per Pi session** at:
 
 ```txt
 ~/.pi/account-switcher/state.json
 ```
 
-Example:
+Each Pi session gets its own key — no global active-account state:
 
 ```json
 {
-  "activeAccountId": "claude-work",
-  "activeModelId": "claude-sonnet-4",
-  "activeModelProvider": "anthropic"
+  "sessions": {
+    "abc123": { "activeAccountId": "claude-work" },
+    "def456": { "activeAccountId": "openai-personal", "activeModelId": "gpt-4", "activeModelProvider": "openai" }
+  }
 }
 ```
 
-On Pi session start, the extension restores the saved active account and model state.
+On Pi session start, the extension derives a session key and restores that session's saved state. Sessions with no saved state fall back to CWD-based auto-select or `defaultAccountId`. Legacy flat-format state (`{ "activeAccountId": "..." }`) is automatically migrated on first load.
 
-## 12. Important Note About Credential Caching
+Session entries auto-accumulate as you use Pi. To prevent unbounded growth, the extension automatically prunes entries that haven't been active in `stateCleanupDays` days (default: 30). If there are still more than 500 entries after the TTL sweep, the oldest ones are removed.
+
+Configure the TTL in `~/.pi/account-switcher/accounts.json`:
+
+```json
+{ "accounts": [...], "stateCleanupDays": 60 }
+```
+
+Set to a higher value (e.g. 90) if you frequently resume sessions from weeks ago, or a lower value (e.g. 7) for tighter cleanup. Entries without a `lastActive` timestamp (from previous versions) are automatically timestamped on first write after upgrade.
+
+## 13. Important Note About Credential Caching
 
 The extension updates `process.env`, Pi's live runtime API-key overrides, and Pi's live OAuth auth storage when those hooks are available.
 
 If a provider still keeps old credentials cached, run `/reload` or restart Pi.
 
-## 13. Troubleshooting
+## 14. Troubleshooting
 
 ### No accounts configured
 
@@ -414,17 +461,10 @@ Run `/accounts:add` to create one interactively, or create `~/.pi/account-switch
 Run explicitly:
 
 ```txt
-/accounts:list
+/accounts:switch
 ```
 
-Also check that account `provider` values match supported providers:
-
-- `anthropic` / `claude`
-- `openai`
-- `openai-codex` / `codex`
-- `google` / `gemini`
-- `xai`
-- `openrouter`
+Also check that account `provider` values match a supported built-in provider or a custom provider added via `/providers:add`. Built-in providers include anthropic, openai, openai-codex, google, xai, openrouter, opencode, opencode-go, github-copilot, amazon-bedrock, and others. Use the `list_accounts` tool or check `@/constants/providers.ts` for the full list.
 
 ### Secret resolves empty
 

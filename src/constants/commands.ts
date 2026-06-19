@@ -6,7 +6,7 @@ export const COMMANDS = {
     },
     list: {
       name: "accounts:list",
-      description: "List configured accounts and activate the selected account",
+      description: "(agent tool: use list_accounts tool instead for structured output",
     },
     edit: {
       name: "accounts:edit",
@@ -28,6 +28,10 @@ export const COMMANDS = {
       name: "accounts:verify",
       description:
         "Verify secrets for one or all accounts without activating them (pass 'all'; add 'ping' to send a test request)",
+    },
+    dirs: {
+      name: "accounts:dirs",
+      description: "Manage working directories for CWD-based auto-select",
     },
   },
   providers: {

@@ -64,14 +64,16 @@ The local commands will be registered as `/dev:accounts:list`, `/dev:accounts:ad
 
 ### Accounts
 
-| Command            | Description                                                     |
-| ------------------ | --------------------------------------------------------------- |
-| `/accounts:add`    | Add a new account interactively                                 |
-| `/accounts:list`   | List all accounts and activate the selected one                 |
-| `/accounts:switch` | Switch to another account within the current provider           |
-| `/accounts:edit`   | Edit label, provider, id, or credential source                  |
-| `/accounts:remove` | Delete an account                                               |
-| `/accounts:oauth`  | Import the current Pi `/login` OAuth session as a named account |
+| Command              | Description                                                     |
+| -------------------- | --------------------------------------------------------------- |
+| `/accounts:add`      | Add a new account interactively                                 |
+| `/accounts:switch`   | Switch to any account (interactive picker or by ID)             |
+| `/accounts:peers`    | Switch to another account within the current provider           |
+| `/accounts:subagent` | Set account for the next spawned subagent                       |
+| `/accounts:edit`     | Edit label, provider, id, or credential source                  |
+| `/accounts:remove`   | Delete an account                                               |
+| `/accounts:oauth`    | Import the current Pi `/login` OAuth session as a named account |
+| `/accounts:dirs`     | Manage working directories for CWD-based auto-select            |
 
 ### Providers
 
@@ -133,9 +135,17 @@ Complete browser/device login, then:
 /accounts:oauth
 ```
 
-Give it a label like `Claude — Work`. Repeat for as many accounts as you need — each gets its own saved credentials. Switch between them any time with `/accounts:list`.
+Give it a label like `Claude — Work`. Repeat for as many accounts as you need — each gets its own saved credentials. Switch between them any time with `/accounts:switch`.
 
 OAuth credentials are read from `~/.pi/agent/auth.json` and written back to Pi's live auth storage on switch.
+
+---
+
+## Directory-based Auto-Select
+
+The extension can automatically activate the right account based on your current working directory. Each account can list directory paths (`dirs`) — the longest prefix match wins. A `defaultAccountId` at the config level serves as the fallback. Use `/accounts:dirs` to manage directories interactively.
+
+See **USAGE.md** for full details on the activation cascade, configuration, and examples.
 
 ---
 
@@ -196,11 +206,13 @@ The export file contains all accounts, providers, and active-selection state as 
 ```json
 {
   "switchMode": "env",
+  "defaultAccountId": "claude-work",
   "accounts": [
     {
       "id": "claude-work",
       "label": "Claude — Work",
       "provider": "anthropic",
+      "dirs": ["/home/user/Development/Work"],
       "env": {
         "ANTHROPIC_API_KEY": { "type": "env", "name": "ANTHROPIC_WORK_API_KEY" }
       }
@@ -209,6 +221,7 @@ The export file contains all accounts, providers, and active-selection state as 
       "id": "openai-personal",
       "label": "OpenAI — Personal",
       "provider": "openai",
+      "dirs": ["/home/user/Projects/Client-A"],
       "env": {
         "OPENAI_API_KEY": { "type": "file", "path": "~/.keys/openai-personal.txt" }
       }
@@ -231,7 +244,22 @@ A plain string is treated as a literal; strings starting with `op://` are resolv
 
 ### State — `~/.pi/account-switcher/state.json`
 
-Tracks the selected account and model across sessions. Restored automatically on `session_start`.
+Tracks the selected account and model **per Pi session**. Each Pi session gets its own key — no global active-account state.
+
+```json
+{
+  "sessions": {
+    "abc123": { "activeAccountId": "claude-work" },
+    "def456": { "activeAccountId": "openai-personal", "activeModelId": "gpt-4", "activeModelProvider": "openai" }
+  }
+}
+```
+
+When Pi starts, the extension derives a session key from Pi's session file and restores that session's saved state. Sessions with no saved state fall back to CWD-based auto-select or `defaultAccountId`.
+
+Legacy flat-format state (`{ "activeAccountId": "..." }`) is automatically migrated to the session-keyed format on first load.
+
+Session entries are automatically cleaned up: entries inactive for `stateCleanupDays` (default 30, configurable in `accounts.json`) are pruned, with a hard cap of 500 entries.
 
 ---
 

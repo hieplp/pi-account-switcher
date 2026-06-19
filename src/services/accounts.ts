@@ -4,6 +4,7 @@ import { accountUtil, providerUtil, uiUtil } from "@/utils";
 
 export interface AccountService {
   load(): Promise<void>;
+  setSessionKey(sessionKey: string): void;
   getAccounts(): AccountConfig[];
   findAccountsByProvider(provider: string, providers: ProviderConfig[]): AccountConfig[];
   getActiveAccount(): AccountConfig | undefined;
@@ -13,6 +14,8 @@ export interface AccountService {
   activateAccount(account: AccountConfig, ctx: AccountSwitcherContext, authProvider?: string): Promise<string>;
   getActiveModelState(): { id: string; provider: string } | undefined;
   saveActiveModel(id: string, provider: string): Promise<void>;
+  setDefaultAccountId(id: string): Promise<void>;
+  getDefaultAccountId(): Promise<string | undefined>;
 }
 
 export function useAccountService(accountsPath: string, statePath?: string): AccountService {
@@ -28,18 +31,51 @@ class AccountServiceImpl implements AccountService {
   private activeAccountId: string | undefined;
   private activeModelId: string | undefined;
   private activeModelProvider: string | undefined;
+  private sessionKey: string | undefined;
 
   constructor(
     private readonly store: AccountStore,
     private readonly stateStore: StateStore,
   ) {}
 
+  setSessionKey(sessionKey: string): void {
+    this.sessionKey = sessionKey;
+  }
+
   async load(): Promise<void> {
+    // Apply config TTL to state store before loading
+    const config = await this.store.loadConfig();
+    this.stateStore.setCleanupDays(config.stateCleanupDays ?? 30);
+
     this.accounts = await this.store.load();
-    const state = await this.stateStore.load();
-    this.activeAccountId = state.activeAccountId;
-    this.activeModelId = state.activeModelId;
-    this.activeModelProvider = state.activeModelProvider;
+    const key = this.sessionKey ?? "default";
+    const state = await this.stateStore.loadSession(key);
+
+    // Session key state only — no fallback to defaultAccountId here.
+    // The full cascade (session → dirs → defaultAccountId) is in runtime.init()
+    // so dir-based matching runs before we fall back to the default.
+    if (state.activeAccountId) {
+      this.activeAccountId = state.activeAccountId;
+      this.activeModelId = state.activeModelId;
+      this.activeModelProvider = state.activeModelProvider;
+    }
+
+    // Legacy cleanup (always runs): if sessions.default still exists from
+    // old format migration, promote its account to config-level default
+    // (if not set yet) and clear the key. This is dead data — sessions
+    // should only have per-session keys once migration completes.
+    if (await this.stateStore.sessionExists("default")) {
+      const legacyDefault = await this.stateStore.loadSession("default");
+      if (legacyDefault.activeAccountId && !(await this.getDefaultAccountId())) {
+        await this.setDefaultAccountId(legacyDefault.activeAccountId);
+      }
+      await this.stateStore.deleteSession("default");
+      if (!this.activeAccountId && legacyDefault.activeAccountId) {
+        this.activeAccountId = legacyDefault.activeAccountId;
+        this.activeModelId = legacyDefault.activeModelId;
+        this.activeModelProvider = legacyDefault.activeModelProvider;
+      }
+    }
   }
 
   getAccounts(): AccountConfig[] {
@@ -100,14 +136,25 @@ class AccountServiceImpl implements AccountService {
       applied = accountUtil.applyResolvedAccountEnv(account, resolved, ctx.modelRegistry, authProvider);
     }
     this.activeAccountId = account.id;
+    // Persist active account ID for subagent (cross-process) inheritance
+    process.env.PI_ACCOUNT_SWITCHER_ACTIVE_ID = account.id;
     await this.flushState();
     uiUtil.setAccountStatus(ctx.ui, account.label);
     if (account.piAuth) return "via OAuth";
     return applied.length > 0 ? applied.join(", ") : "";
   }
 
+  async setDefaultAccountId(id: string): Promise<void> {
+    await this.store.setDefaultAccountId(id);
+  }
+
+  async getDefaultAccountId(): Promise<string | undefined> {
+    const config = await this.store.loadConfig();
+    return config.defaultAccountId;
+  }
+
   private async flushState(): Promise<void> {
-    await this.stateStore.save({
+    await this.stateStore.saveSession(this.sessionKey ?? "default", {
       activeAccountId: this.activeAccountId,
       activeModelId: this.activeModelId,
       activeModelProvider: this.activeModelProvider,

@@ -22,9 +22,10 @@ export const providerUtil = {
     );
   },
 
-  providerChoices: (customProviders: ProviderConfig[] = []): string[] => {
+  providerChoices: (customProviders: ProviderConfig[] = [], piProviderIds: string[] = []): string[] => {
     const customIds = customProviders.map((p) => providerUtil.normalizeProvider(p.id)).sort();
-    return [...BUILT_IN_PROVIDER_IDS, ...customIds, "custom"];
+    const dynamicIds = [...new Set(piProviderIds.map(providerUtil.normalizeProvider))].sort();
+    return [...new Set([...BUILT_IN_PROVIDER_IDS, ...dynamicIds, ...customIds, "custom"])];
   },
 
   hasProvider: (provider: string, providers: ProviderConfig[]): boolean => {

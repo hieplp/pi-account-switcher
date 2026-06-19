@@ -45,12 +45,13 @@
     "@earendil-works/pi-coding-agent": "latest",
     "@types/node": "latest",
     "prettier": "^3.8.3",
+    "typebox": "^1.2.14",
     "typescript": "latest",
     "vitest": "latest"
   },
   "pi": {
     "extensions": [
-      "./src/extension.ts"
+      "./src/index.ts"
     ]
   },
   "packageManager": "pnpm@11.5.0+sha512.dbfcc4f81cf48597afd4bc391ffdf12c11f1a9fb83a395bfa6b0a2d9cc2fd8ffebafdb1ccbd529632153f793904c2615b7f09fe1a345473fd1c35845172a8eb1"
