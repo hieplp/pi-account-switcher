@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import type { AccountSwitcher } from "@/runtime";
-import type { AccountSwitcherContext } from "@/types";
+import type { AccountSwitcher } from "../../runtime";
+import type { AccountSwitcherContext } from "../../types";
 
 describe("SwitchAccountCommand", () => {
   function makeAccount(id: string, label: string, provider: string) {

@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
-import { PI_AUTH_PATH } from "@/constants";
-import type { PiAuthEntry } from "@/types";
-import { fileUtil } from "@/utils";
+import { PI_AUTH_PATH } from "../constants";
+import type { PiAuthEntry } from "../types";
+import { fileUtil } from "../utils";
 
 type PiAuthFile = Record<string, PiAuthEntry>;
 

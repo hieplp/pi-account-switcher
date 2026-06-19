@@ -1,8 +1,8 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import type { AccountSwitcher } from "@/runtime";
-import type { AccountConfig, AccountSwitcherContext } from "@/types";
-import { COMMANDS, OAUTH_PROVIDER_IDS, PI_AUTH_PATH } from "@/constants";
-import { commonUtil, errorUtil } from "@/utils";
+import type { AccountSwitcher } from "../../runtime";
+import type { AccountConfig, AccountSwitcherContext } from "../../types";
+import { COMMANDS, OAUTH_PROVIDER_IDS, PI_AUTH_PATH } from "../../constants";
+import { commonUtil, errorUtil } from "../../utils";
 import { AccountCommand } from "./shared";
 
 export const useOAuthImportCommand = (pi: ExtensionAPI, runtime: AccountSwitcher) => {

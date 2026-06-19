@@ -1,6 +1,6 @@
-import { type AccountStore, useAccountStore, type StateStore, useStateStore } from "@/storage";
-import type { AccountConfig, AccountSwitcherContext, ProviderConfig } from "@/types";
-import { accountUtil, providerUtil, uiUtil } from "@/utils";
+import { type AccountStore, useAccountStore, type StateStore, useStateStore } from "../storage";
+import type { AccountConfig, AccountSwitcherContext, ProviderConfig } from "../types";
+import { accountUtil, providerUtil, uiUtil } from "../utils";
 
 export interface AccountService {
   load(): Promise<void>;

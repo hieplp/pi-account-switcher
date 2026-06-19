@@ -1,5 +1,5 @@
 import type { ExtensionUIContext } from "@earendil-works/pi-coding-agent";
-import type { ProviderConfig } from "@/types";
+import type { ProviderConfig } from "../../../types";
 
 export async function selectProvider(
   ui: ExtensionUIContext,

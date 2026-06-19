@@ -1,5 +1,5 @@
-import type { AccountConfig, ProviderConfig } from "@/types";
-import { providerUtil } from "@/utils";
+import type { AccountConfig, ProviderConfig } from "../../../types";
+import { providerUtil } from "../../../utils";
 
 export type GroupedAccountItem =
   | { type: "header"; provider: string }

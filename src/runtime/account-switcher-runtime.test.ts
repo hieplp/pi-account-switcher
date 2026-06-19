@@ -3,8 +3,8 @@ import { join } from "node:path";
 import { tmpdir, homedir } from "node:os";
 import { describe, expect, it, beforeAll, afterEach, vi } from "vitest";
 import AccountSwitcherRuntime from "./account-switcher-runtime";
-import { useAccountService } from "@/services";
-import type { AccountSwitcherContext } from "@/types";
+import { useAccountService } from "../services";
+import type { AccountSwitcherContext } from "../types";
 
 /** Build a minimal mock of AccountSwitcherContext for testing init(). */
 function mockCtx(overrides: { cwd?: string; sessionFile?: string }): AccountSwitcherContext {

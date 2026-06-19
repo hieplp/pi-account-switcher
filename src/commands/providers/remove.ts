@@ -1,8 +1,8 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import type { AccountSwitcher } from "@/runtime";
-import { COMMANDS } from "@/constants";
-import type { AccountSwitcherContext } from "@/types";
-import { errorUtil, providerUtil } from "@/utils";
+import type { AccountSwitcher } from "../../runtime";
+import { COMMANDS } from "../../constants";
+import type { AccountSwitcherContext } from "../../types";
+import { errorUtil, providerUtil } from "../../utils";
 import { ProviderCommand, selectProvider } from "./shared";
 
 export const useRemoveProviderCommand = (pi: ExtensionAPI, runtime: AccountSwitcher) => {

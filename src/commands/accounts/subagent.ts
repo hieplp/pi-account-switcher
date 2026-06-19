@@ -1,7 +1,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import type { AccountSwitcher } from "@/runtime";
-import type { AccountSwitcherContext } from "@/types";
-import { errorUtil } from "@/utils";
+import type { AccountSwitcher } from "../../runtime";
+import type { AccountSwitcherContext } from "../../types";
+import { errorUtil } from "../../utils";
 import { AccountCommand } from "./shared";
 
 export const useSubagentAccountCommand = (pi: ExtensionAPI, runtime: AccountSwitcher) => {

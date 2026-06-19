@@ -1,8 +1,8 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import type { AccountSwitcher } from "@/runtime";
-import type { AccountSwitcherContext, ProviderConfig } from "@/types";
+import type { AccountSwitcher } from "../../../runtime";
+import type { AccountSwitcherContext, ProviderConfig } from "../../../types";
 import { BaseCommand, type CommandMeta } from "../../base";
-import { providerUtil } from "@/utils";
+import { providerUtil } from "../../../utils";
 import type { ProviderModel } from "./select";
 
 export abstract class ModelCommand extends BaseCommand {

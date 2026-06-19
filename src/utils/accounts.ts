@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import type { ModelRegistry } from "@earendil-works/pi-coding-agent";
-import type { AccountConfig, SecretSource } from "@/types";
+import type { AccountConfig, SecretSource } from "../types";
 import { commonUtil } from "./common";
 import { fileUtil } from "./files";
 import { providerUtil } from "./providers";

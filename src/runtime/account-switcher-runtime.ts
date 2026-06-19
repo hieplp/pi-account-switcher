@@ -1,12 +1,12 @@
 import type AccountSwitcher from "./account-switcher";
 import { createHash } from "node:crypto";
-import { ACCOUNTS_PATH, PROVIDERS_PATH, STATE_PATH } from "@/constants";
+import { ACCOUNTS_PATH, PROVIDERS_PATH, STATE_PATH } from "../constants";
 import type { Api, Model } from "@earendil-works/pi-ai";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import type { AccountConfig, AccountSwitcherContext, PiAuthEntry, ProviderConfig } from "@/types";
-import type { AccountService, ModelService, PiAuthService, ProviderService } from "@/services";
-import { useAccountService, useModelService, usePiAuthService, useProviderService } from "@/services";
-import { accountUtil, findLongestMatchingDir, modelUtil, providerUtil, uiUtil } from "@/utils";
+import type { AccountConfig, AccountSwitcherContext, PiAuthEntry, ProviderConfig } from "../types";
+import type { AccountService, ModelService, PiAuthService, ProviderService } from "../services";
+import { useAccountService, useModelService, usePiAuthService, useProviderService } from "../services";
+import { accountUtil, findLongestMatchingDir, modelUtil, providerUtil, uiUtil } from "../utils";
 
 function resolveAuthProvider(account: AccountConfig, providers: ProviderConfig[]): string {
   if (account.piAuth?.provider) return account.piAuth.provider;

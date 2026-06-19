@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { commonUtil, findLongestMatchingDir, providerUtil } from "@/utils";
+import { commonUtil, findLongestMatchingDir, providerUtil } from "../utils";
 
 const customProviders = [{ id: "acme", aliases: ["acme-ai"], envKeys: ["ACME_API_KEY"] }];
 

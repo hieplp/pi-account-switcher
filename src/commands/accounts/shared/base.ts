@@ -1,7 +1,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import type { AccountSwitcher } from "@/runtime";
-import type { AccountConfig, AccountSwitcherContext } from "@/types";
-import { uiUtil } from "@/utils";
+import type { AccountSwitcher } from "../../../runtime";
+import type { AccountConfig, AccountSwitcherContext } from "../../../types";
+import { uiUtil } from "../../../utils";
 import { BaseCommand, type CommandMeta } from "../../base";
 import { buildGroupedItems, formatAccountItem } from "./select";
 

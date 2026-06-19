@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { formatAccountList } from "./list";
-import type { AccountConfig } from "@/types";
+import type { AccountConfig } from "../../types";
 
 describe("formatAccountList", () => {
   const accounts = [

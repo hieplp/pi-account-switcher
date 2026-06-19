@@ -1,7 +1,7 @@
-import type { ProviderConfig } from "@/types";
-import { commonUtil, errorUtil, fileUtil, providerUtil } from "@/utils";
+import type { ProviderConfig } from "../types";
+import { commonUtil, errorUtil, fileUtil, providerUtil } from "../utils";
 import { readFile } from "node:fs/promises";
-import { providerCatalogArraySchema, providerCatalogRecordSchema } from "@/schemas";
+import { providerCatalogArraySchema, providerCatalogRecordSchema } from "../schemas";
 
 export interface ProviderStore {
   load(): Promise<ProviderConfig[]>;

@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
-import { configSchema } from "@/schemas";
-import type { AccountConfig, AccountSwitcherConfig } from "@/types";
-import { errorUtil, fileUtil } from "@/utils";
+import { configSchema } from "../schemas";
+import type { AccountConfig, AccountSwitcherConfig } from "../types";
+import { errorUtil, fileUtil } from "../utils";
 
 export interface AccountStore {
   load(): Promise<AccountConfig[]>;

@@ -1,7 +1,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import type { AccountSwitcher } from "@/runtime";
-import type { AccountConfig, AccountSwitcherContext, ProviderConfig } from "@/types";
-import { commandUtil, providerUtil, uiUtil } from "@/utils";
+import type { AccountSwitcher } from "../runtime";
+import type { AccountConfig, AccountSwitcherContext, ProviderConfig } from "../types";
+import { commandUtil, providerUtil, uiUtil } from "../utils";
 
 function deduplicateLabels(labels: string[]): string[] {
   const seen = new Map<string, number>();

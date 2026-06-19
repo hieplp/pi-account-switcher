@@ -1,7 +1,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import type { AccountSwitcher } from "@/runtime";
-import type { AccountConfig, AccountSwitcherContext } from "@/types";
-import { COMMANDS } from "@/constants";
+import type { AccountSwitcher } from "../../runtime";
+import type { AccountConfig, AccountSwitcherContext } from "../../types";
+import { COMMANDS } from "../../constants";
 import { BaseCommand } from "../base";
 import { buildGroupedItems } from "../accounts/shared/select";
 import { homedir } from "node:os";

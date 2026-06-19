@@ -1,6 +1,6 @@
 import { Type } from "typebox";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import type { AccountSwitcher } from "@/runtime";
+import type { AccountSwitcher } from "../../runtime";
 
 export const SET_SUBAGENT_ACCOUNT_TOOL = "set_subagent_account";
 

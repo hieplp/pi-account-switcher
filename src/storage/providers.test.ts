@@ -2,7 +2,7 @@ import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { describe, expect, it, vi } from "vitest";
-import { useProviderService } from "@/services/providers";
+import { useProviderService } from "../services/providers";
 import { useProviderStore } from "./providers";
 
 function createPiStub() {

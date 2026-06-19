@@ -1,6 +1,6 @@
 import type { ExtensionUIContext } from "@earendil-works/pi-coding-agent";
-import type { ProviderModelConfig } from "@/types";
-import { uiUtil } from "@/utils";
+import type { ProviderModelConfig } from "../../../types";
+import { uiUtil } from "../../../utils";
 
 export class ModelConfigBuilder {
   private readonly prompt: ReturnType<typeof uiUtil.prompt>;

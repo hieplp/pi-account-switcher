@@ -1,8 +1,8 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import type { AccountSwitcher } from "@/runtime";
-import type { AccountSwitcherContext, AccountConfig, ProviderConfig } from "@/types";
-import { COMMANDS } from "@/constants";
-import { commandUtil, errorUtil, providerUtil } from "@/utils";
+import type { AccountSwitcher } from "../../runtime";
+import type { AccountSwitcherContext, AccountConfig, ProviderConfig } from "../../types";
+import { COMMANDS } from "../../constants";
+import { commandUtil, errorUtil, providerUtil } from "../../utils";
 import { AccountCommand } from "./shared";
 
 /**

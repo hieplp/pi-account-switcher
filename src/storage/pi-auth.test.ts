@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { usePiAuthStore, isOAuthEntry } from "./pi-auth";
 import { readFile } from "node:fs/promises";
-import type { PiAuthEntry } from "@/types";
+import type { PiAuthEntry } from "../types";
 
 vi.mock("node:fs/promises", () => ({
   readFile: vi.fn(),

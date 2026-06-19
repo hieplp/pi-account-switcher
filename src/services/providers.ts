@@ -1,7 +1,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { type ProviderStore, useProviderStore } from "@/storage";
-import type { ProviderConfig, ProviderModelConfig } from "@/types";
-import { commonUtil } from "@/utils";
+import { type ProviderStore, useProviderStore } from "../storage";
+import type { ProviderConfig, ProviderModelConfig } from "../types";
+import { commonUtil } from "../utils";
 
 export interface ProviderService {
   load(): Promise<void>;

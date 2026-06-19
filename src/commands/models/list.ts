@@ -1,8 +1,8 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import type { AccountSwitcher } from "@/runtime";
-import type { AccountSwitcherContext } from "@/types";
-import { COMMANDS } from "@/constants";
-import { errorUtil, providerUtil } from "@/utils";
+import type { AccountSwitcher } from "../../runtime";
+import type { AccountSwitcherContext } from "../../types";
+import { COMMANDS } from "../../constants";
+import { errorUtil, providerUtil } from "../../utils";
 import { ModelCommand } from "./shared";
 
 export const useListModelsCommand = (pi: ExtensionAPI, runtime: AccountSwitcher) => {

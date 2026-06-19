@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { AccountConfigBuilder } from "./prompts";
 import type { ExtensionUIContext } from "@earendil-works/pi-coding-agent";
-import type { PiAuthEntry } from "@/types";
+import type { PiAuthEntry } from "../../../types";
 
 function mockUi(overrides?: Partial<ExtensionUIContext>): ExtensionUIContext {
   return {

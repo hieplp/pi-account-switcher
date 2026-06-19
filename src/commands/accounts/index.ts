@@ -1,5 +1,5 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import type { AccountSwitcher } from "@/runtime";
+import type { AccountSwitcher } from "../../runtime";
 import { useAddAccountCommand } from "./add";
 import { useEditAccountCommand } from "./edit";
 import { useListAccountsTool } from "./list";

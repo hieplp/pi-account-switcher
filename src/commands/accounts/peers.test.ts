@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { filterPeers } from "./peers";
-import type { AccountConfig } from "@/types";
+import type { AccountConfig } from "../../types";
 
 describe("filterPeers", () => {
   const accounts = [

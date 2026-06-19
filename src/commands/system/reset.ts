@@ -1,10 +1,10 @@
 import { rm } from "node:fs/promises";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import type { AccountSwitcher } from "@/runtime";
-import { ACCOUNTS_PATH, COMMANDS, PROVIDERS_PATH, STATE_PATH } from "@/constants";
-import type { AccountSwitcherContext } from "@/types";
+import type { AccountSwitcher } from "../../runtime";
+import { ACCOUNTS_PATH, COMMANDS, PROVIDERS_PATH, STATE_PATH } from "../../constants";
+import type { AccountSwitcherContext } from "../../types";
 import { BaseCommand } from "../base";
-import { errorUtil, uiUtil } from "@/utils";
+import { errorUtil, uiUtil } from "../../utils";
 
 export const useResetCommand = (pi: ExtensionAPI, runtime: AccountSwitcher) => {
   new ResetCommand(pi, runtime).register();
