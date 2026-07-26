@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import type { ModelRegistry } from "@earendil-works/pi-coding-agent";
 import type { AccountConfig, SecretSource } from "../types";
 import { commonUtil } from "./common";
+import { credentialUtil } from "./credentials";
 import { fileUtil } from "./files";
 import { providerUtil } from "./providers";
 
@@ -15,7 +16,7 @@ export const accountUtil = {
         delete process.env[envName];
       }
     }
-    modelRegistry?.authStorage.removeRuntimeApiKey(authProvider);
+    credentialUtil.resolve(modelRegistry)?.removeRuntimeApiKey(authProvider);
   },
 
   applyAccountEnv: async (
@@ -25,8 +26,7 @@ export const accountUtil = {
   ): Promise<string[]> => {
     if (account.piAuth) {
       const authProvider = authProviderOverride ?? account.piAuth.provider;
-      modelRegistry?.authStorage.set(authProvider, account.piAuth.entry);
-      modelRegistry?.authStorage.reload();
+      await credentialUtil.set(credentialUtil.resolve(modelRegistry), authProvider, account.piAuth.entry);
       closeCachedSessions();
       return [];
     }
@@ -61,8 +61,9 @@ export const accountUtil = {
     }
 
     const firstValue = resolvedEntries[0]?.[1];
-    if (firstValue) modelRegistry?.authStorage.setRuntimeApiKey(authProvider, firstValue);
-    else modelRegistry?.authStorage.removeRuntimeApiKey(authProvider);
+    const credentials = credentialUtil.resolve(modelRegistry);
+    if (firstValue) credentials?.setRuntimeApiKey(authProvider, firstValue);
+    else credentials?.removeRuntimeApiKey(authProvider);
 
     return applied;
   },

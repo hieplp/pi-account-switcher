@@ -8,12 +8,12 @@ import type { AccountSwitcherContext } from "../types";
 
 /** Build a minimal mock of AccountSwitcherContext for testing init(). */
 function mockCtx(overrides: { cwd?: string; sessionFile?: string }): AccountSwitcherContext {
-  const authStorage = {
-    set: () => {},
-    reload: () => {},
+  const credentials = {
+    modify: async () => undefined,
+    read: async () => undefined,
+    delete: async () => {},
     setRuntimeApiKey: () => {},
     removeRuntimeApiKey: () => {},
-    get: () => undefined,
   };
   return {
     cwd: overrides.cwd ?? homedir(),
@@ -28,7 +28,7 @@ function mockCtx(overrides: { cwd?: string; sessionFile?: string }): AccountSwit
       input: async () => undefined,
       onTerminalInput: () => () => {},
     } as any,
-    modelRegistry: { authStorage, find: () => undefined } as any,
+    modelRegistry: { runtime: { credentials }, find: () => undefined } as any,
     model: undefined,
     sessionManager:
       overrides.sessionFile !== undefined ? ({ getSessionFile: () => overrides.sessionFile } as any) : undefined,
@@ -37,9 +37,9 @@ function mockCtx(overrides: { cwd?: string; sessionFile?: string }): AccountSwit
 
 describe("AccountSwitcherRuntime", () => {
   describe("init cascade", () => {
-  afterEach(() => {
-    delete process.env.PI_ACCOUNT_SWITCHER_ACTIVE_ID;
-  });
+    afterEach(() => {
+      delete process.env.PI_ACCOUNT_SWITCHER_ACTIVE_ID;
+    });
     it("uses session state when it exists (beats dir matching)", async () => {
       const dir = await mkdtemp(join(tmpdir(), "runtime-cascade-"));
       const accPath = join(dir, "accounts.json");
@@ -268,11 +268,15 @@ describe("AccountSwitcherRuntime", () => {
 
       const setup = useAccountService(accPath, statePath);
       await setup.addAccount({
-        id: "next-acc", label: "Next", provider: "anthropic",
+        id: "next-acc",
+        label: "Next",
+        provider: "anthropic",
         piAuth: { provider: "anthropic", entry: { type: "api_key", key: "sk" } },
       });
       await setup.addAccount({
-        id: "active-acc", label: "Active", provider: "opencode",
+        id: "active-acc",
+        label: "Active",
+        provider: "opencode",
         piAuth: { provider: "opencode", entry: { type: "api_key", key: "sk" } },
       });
 

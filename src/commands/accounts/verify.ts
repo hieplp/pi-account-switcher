@@ -1,9 +1,9 @@
 import type { Api, Model } from "@earendil-works/pi-ai";
-import type { AuthCredential, ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { AccountSwitcher } from "../../runtime";
-import type { AccountConfig, AccountSwitcherContext, ProviderConfig, SecretSource } from "../../types";
+import type { AccountConfig, AccountSwitcherContext, PiAuthEntry, ProviderConfig, SecretSource } from "../../types";
 import { COMMANDS } from "../../constants";
-import { accountUtil, commonUtil, errorUtil, providerUtil, uiUtil } from "../../utils";
+import { accountUtil, commonUtil, credentialUtil, errorUtil, providerUtil, uiUtil } from "../../utils";
 import { AccountCommand } from "./shared";
 
 export const useVerifyAccountsCommand = (pi: ExtensionAPI, runtime: AccountSwitcher) => {
@@ -156,7 +156,8 @@ class VerifyAccountsCommand extends AccountCommand {
     }
 
     const envBackup = new Map<string, string | undefined>();
-    let authBackup: AuthCredential | undefined;
+    let authBackup: PiAuthEntry | undefined;
+    const credentials = credentialUtil.resolve(ctx.modelRegistry);
     let hadAuth = false;
     let providerToRestore: ProviderConfig | undefined;
 
@@ -171,10 +172,9 @@ class VerifyAccountsCommand extends AccountCommand {
       }
 
       if (account.piAuth) {
-        hadAuth = ctx.modelRegistry.authStorage.has(authProvider);
-        authBackup = ctx.modelRegistry.authStorage.get(authProvider);
-        ctx.modelRegistry.authStorage.set(authProvider, account.piAuth.entry);
-        ctx.modelRegistry.authStorage.reload();
+        authBackup = await credentials?.read(authProvider);
+        hadAuth = authBackup !== undefined;
+        await credentialUtil.set(credentials, authProvider, account.piAuth.entry);
       }
 
       if (account.providerApiKey) {
@@ -197,9 +197,8 @@ class VerifyAccountsCommand extends AccountCommand {
         else process.env[envName] = previous;
       }
       if (account.piAuth) {
-        if (hadAuth && authBackup) ctx.modelRegistry.authStorage.set(authProvider, authBackup);
-        else ctx.modelRegistry.authStorage.remove(authProvider);
-        ctx.modelRegistry.authStorage.reload();
+        if (hadAuth && authBackup) await credentialUtil.set(credentials, authProvider, authBackup);
+        else await credentials?.delete(authProvider);
       }
       if (providerToRestore) {
         this.runtime.registerProvider(providerToRestore);
