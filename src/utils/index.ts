@@ -1,6 +1,7 @@
 export * from "./files";
 export * from "./errors";
 export * from "./common";
+export * from "./credentials";
 export * from "./commands";
 export * from "./models";
 export * from "./providers";
