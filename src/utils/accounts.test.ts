@@ -27,6 +27,34 @@ describe("accountUtil", () => {
     }
   });
 
+  it("stores OAuth credentials through the legacy ModelRegistry auth storage", async () => {
+    const authStorage = { set: vi.fn(), reload: vi.fn() };
+    const entry = { type: "oauth", access: "token", refresh: "refresh", expires: 123 } as const;
+
+    await accountUtil.applyAccountEnv(
+      { id: "work", label: "Work", provider: "openai-codex", piAuth: { provider: "openai-codex", entry } },
+      { authStorage } as never,
+    );
+
+    expect(authStorage.set).toHaveBeenCalledWith("openai-codex", entry);
+    expect(authStorage.reload).toHaveBeenCalledOnce();
+  });
+
+  it("stores OAuth credentials through the Pi 0.83 ModelRuntime", async () => {
+    const modify = vi.fn(async (_provider: string, update: () => Promise<unknown>) => update());
+    const refresh = vi.fn(async () => undefined);
+    const entry = { type: "oauth", access: "token", refresh: "refresh", expires: 123 } as const;
+
+    await accountUtil.applyAccountEnv(
+      { id: "work", label: "Work", provider: "openai-codex", piAuth: { provider: "openai-codex", entry } },
+      { runtime: { credentials: { modify }, refresh } } as never,
+    );
+
+    expect(modify).toHaveBeenCalledWith("openai-codex", expect.any(Function));
+    expect(await modify.mock.calls[0]![1]()).toEqual(entry);
+    expect(refresh).toHaveBeenCalledOnce();
+  });
+
   it("applies resolved env entries after successful resolution", () => {
     const authStorage = {
       setRuntimeApiKey: vi.fn(),
@@ -117,10 +145,18 @@ describe("clearAccountEnv", () => {
     }
   });
 
-  it("calls removeRuntimeApiKey when no piAuth", async () => {
+  it("calls removeRuntimeApiKey through legacy auth storage", async () => {
     const removeRuntimeApiKey = vi.fn();
     await accountUtil.clearAccountEnv({ id: "a", label: "A", provider: "anthropic" }, {
       authStorage: { removeRuntimeApiKey },
+    } as never);
+    expect(removeRuntimeApiKey).toHaveBeenCalledWith("anthropic");
+  });
+
+  it("calls removeRuntimeApiKey through the Pi 0.83 ModelRuntime", async () => {
+    const removeRuntimeApiKey = vi.fn(async () => undefined);
+    await accountUtil.clearAccountEnv({ id: "a", label: "A", provider: "anthropic" }, {
+      runtime: { removeRuntimeApiKey },
     } as never);
     expect(removeRuntimeApiKey).toHaveBeenCalledWith("anthropic");
   });
