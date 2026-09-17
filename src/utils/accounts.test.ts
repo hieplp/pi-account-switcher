@@ -28,7 +28,8 @@ describe("accountUtil", () => {
   });
 
   it("applies resolved env entries after successful resolution", () => {
-    const authStorage = {
+    const credentials = {
+      modify: vi.fn(),
       setRuntimeApiKey: vi.fn(),
       removeRuntimeApiKey: vi.fn(),
     };
@@ -38,12 +39,12 @@ describe("accountUtil", () => {
       const applied = accountUtil.applyResolvedAccountEnv(
         { id: "work", label: "Work", provider: "Claude" },
         [["ACCOUNT_SWITCHER_TEST_KEY", "new"]],
-        { authStorage } as never,
+        { runtime: { credentials } } as never,
       );
 
       expect(applied).toEqual(["ACCOUNT_SWITCHER_TEST_KEY"]);
       expect(process.env.ACCOUNT_SWITCHER_TEST_KEY).toBe("new");
-      expect(authStorage.setRuntimeApiKey).toHaveBeenCalledWith("anthropic", "new");
+      expect(credentials.setRuntimeApiKey).toHaveBeenCalledWith("anthropic", "new");
     } finally {
       if (before === undefined) delete process.env.ACCOUNT_SWITCHER_TEST_KEY;
       else process.env.ACCOUNT_SWITCHER_TEST_KEY = before;
@@ -120,7 +121,7 @@ describe("clearAccountEnv", () => {
   it("calls removeRuntimeApiKey when no piAuth", async () => {
     const removeRuntimeApiKey = vi.fn();
     await accountUtil.clearAccountEnv({ id: "a", label: "A", provider: "anthropic" }, {
-      authStorage: { removeRuntimeApiKey },
+      runtime: { credentials: { modify: vi.fn(), removeRuntimeApiKey } },
     } as never);
     expect(removeRuntimeApiKey).toHaveBeenCalledWith("anthropic");
   });
