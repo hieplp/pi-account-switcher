@@ -208,7 +208,9 @@ class VerifyAccountsCommand extends AccountCommand {
     try {
       ctx.ui.notify(`${prefix} ping: sending request via ${model.provider}/${model.id}...`, "info");
 
-      const { completeSimple } = await import("@earendil-works/pi-ai");
+      // Pi 0.85 moved `completeSimple` behind the `@earendil-works/pi-ai/compat`
+      // subpath export; the package root no longer re-exports it.
+      const { completeSimple } = await import("@earendil-works/pi-ai/compat");
       const response = await completeSimple(
         model,
         {
