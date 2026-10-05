@@ -12,7 +12,7 @@ class SubagentAccountCommand extends AccountCommand {
   constructor(pi: ExtensionAPI, runtime: AccountSwitcher) {
     super(pi, runtime, {
       name: "accounts:subagent",
-      description: "Set the account to use for the next spawned subagent (one-shot or persistent)",
+      description: "Set a persistent child account preference (one-shot is unsupported)",
     });
   }
 
@@ -30,19 +30,14 @@ class SubagentAccountCommand extends AccountCommand {
       const account = await this.pickGroupedAccount(ctx, accounts, "Account for subagent");
       if (!account) return;
 
-      // Ask about oneshot (default: yes)
-      const oneshot = await ctx.ui.confirm(
-        "Apply to next subagent only?",
-        "Yes = one-shot (next subagent only). No = persistent (all subagents until changed).",
+      const confirmed = await ctx.ui.confirm(
+        "Set persistent child account?",
+        "All inheriting children will use this account until the preference is cleared.",
       );
+      if (!confirmed) return;
+      process.env.PI_ACCOUNT_SWITCHER_CHILD_ID = account.id;
 
-      const varName = oneshot !== false ? "PI_ACCOUNT_SWITCHER_NEXT_ID" : "PI_ACCOUNT_SWITCHER_ACTIVE_ID";
-      process.env[varName] = account.id;
-
-      ctx.ui.notify(
-        `Subagent account set to: ${account.label} (${oneshot !== false ? "next subagent only" : "persistent"}).`,
-        "info",
-      );
+      ctx.ui.notify(`Subagent account set to: ${account.label} (persistent).`, "info");
     } catch (e) {
       ctx.ui.notify(`Failed to set subagent account: ${errorUtil.format(e)}`, "error");
     }

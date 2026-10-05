@@ -112,7 +112,7 @@ Switch OAuth accounts with:
 /accounts:switch
 ```
 
-OAuth credentials are captured from Pi's auth file:
+OAuth credentials are captured from `auth.json` in Pi's active agent directory. If `PI_CODING_AGENT_DIR` is set, that directory is used (including Pi's tilde expansion); otherwise the default is:
 
 ```txt
 ~/.pi/agent/auth.json
@@ -281,7 +281,7 @@ A plain string is treated as a literal value, except strings beginning with `op:
 /accounts:switch       # interactive picker from all accounts
 /accounts:switch <id>  # activate by ID directly (agent-facing)
 /accounts:peers        # picker from same-provider accounts
-/accounts:subagent     # set account for next spawned subagent
+/accounts:subagent     # set persistent child account preference
 ```
 
 ### Import current Pi OAuth login
@@ -444,13 +444,17 @@ Configure the TTL in `~/.pi/account-switcher/accounts.json`:
 
 Set to a higher value (e.g. 90) if you frequently resume sessions from weeks ago, or a lower value (e.g. 7) for tighter cleanup. Entries without a `lastActive` timestamp (from previous versions) are automatically timestamped on first write after upgrade.
 
-## 13. Important Note About Credential Caching
+## 13. Pi Compatibility
+
+Tested host: exact Pi `1.0.2`. No compatibility claim is made for other versions. Host-provided dependencies use wildcard peer declarations required by the loader. Stored OAuth credential mutation remains isolated in one compatibility helper. Offline regression coverage tests synthetic credential storage, snapshots, restoration, and deletion, not OAuth refresh or token validity. See [Docker acceptance](docs/acceptance.md).
+
+## 14. Important Note About Credential Caching
 
 The extension updates `process.env`, Pi's live runtime API-key overrides, and Pi's live OAuth auth storage when those hooks are available.
 
 If a provider still keeps old credentials cached, run `/reload` or restart Pi.
 
-## 14. Troubleshooting
+## 15. Troubleshooting
 
 ### No accounts configured
 
@@ -474,6 +478,16 @@ Check the configured secret source:
 - file exists and contains the key
 - command works manually
 - `op` CLI is signed in
+
+### Child account preferences (Pi 1.0.2)
+
+Use `set_subagent_account` with `{ "id": "account-id", "oneshot": false }` for a persistent child preference; pass `{ "id": "" }` to clear it. `/accounts:subagent` offers the same persistent selection. One-shot requests (including omitted `oneshot`, or the UI one-shot choice) reject without mutation and explain how to use persistent selection instead.
+
+Parent selection uses `PI_ACCOUNT_SWITCHER_ACTIVE_ID`; child preference uses the separate `PI_ACCOUNT_SWITCHER_CHILD_ID`. Parent switching never rewrites the child preference. Clearing it preserves parent credentials, identity, and saved selection. Children resolve the explicit child preference first, then inherited parent identity, then normal session/directory/default fallback. The preference remains inherited by descendants until explicitly cleared in that process.
+
+Migration: obsolete `PI_ACCOUNT_SWITCHER_NEXT_ID` is ignored and deleted at initialization (and explicit clear); it no longer selects an account. Existing saved parent selections are unchanged. The old shared `ACTIVE_ID` cannot distinguish a historical persistent override from parent identity, so it remains the inherited parent selector; reapply child preferences explicitly using `oneshot=false`.
+
+This supports environment-inheriting launchers, including the inspected subagent launcher on exact Pi 1.0.2. Sequential, chained, parallel, and retried launches each receive the preference present at their own spawn; rejected dispatch does not change it. This is not a batch snapshot guarantee. Launchers that scrub environment are unsupported. Reliable one-shot support would require a separately versioned opt-in parent dispatcher with atomic per-child reservation and accepted-spawn consumption; tool names and child-local deletion are insufficient.
 
 ### Changes do not apply
 

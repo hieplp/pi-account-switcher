@@ -28,7 +28,7 @@ function mockCtx(overrides: { cwd?: string; sessionFile?: string }): AccountSwit
       input: async () => undefined,
       onTerminalInput: () => () => {},
     } as any,
-    modelRegistry: { authStorage, find: () => undefined } as any,
+    modelRegistry: { authStorage, runtime: { credentials: { store: { read: async () => undefined, modify: async () => undefined }, overrides: new Map() } }, find: () => undefined, getAvailable: () => [], getAll: () => [] } as any,
     model: undefined,
     sessionManager:
       overrides.sessionFile !== undefined ? ({ getSessionFile: () => overrides.sessionFile } as any) : undefined,
@@ -260,7 +260,33 @@ describe("AccountSwitcherRuntime", () => {
       }
     });
 
-    it("NEXT_ID takes priority over ACTIVE_ID and is consumed after one init", async () => {
+    it("prefers persistent child selection and keeps it across parent switching", async () => {
+      const dir = await mkdtemp(join(tmpdir(), "runtime-child-"));
+      const paths = { accounts: join(dir, "accounts.json"), providers: join(dir, "providers.json"), state: join(dir, "state.json") };
+      const setup = useAccountService(paths.accounts, paths.state);
+      for (const id of ["parent", "child"]) await setup.addAccount({ id, label: id, provider: "anthropic", piAuth: { provider: "anthropic", entry: { type: "api_key", key: "fake" } } });
+      const oldChild = process.env.PI_ACCOUNT_SWITCHER_CHILD_ID;
+      const oldActive = process.env.PI_ACCOUNT_SWITCHER_ACTIVE_ID;
+      process.env.PI_ACCOUNT_SWITCHER_CHILD_ID = "child";
+      process.env.PI_ACCOUNT_SWITCHER_ACTIVE_ID = "parent";
+      try {
+        const runtime = new AccountSwitcherRuntime({ registerProvider: () => {}, setModel: async () => true }, paths);
+        const ctx = mockCtx({});
+        await runtime.init(ctx);
+        expect(runtime.getActiveAccount()?.id).toBe("child");
+        ctx.model = { id: "fake", provider: "anthropic" } as any;
+        await runtime.activateAccount(runtime.getAccounts().find(a => a.id === "parent")!, ctx);
+        expect(runtime.getActiveAccount()?.id).toBe("parent");
+        expect(process.env.PI_ACCOUNT_SWITCHER_CHILD_ID).toBe("child");
+      } finally {
+        if (oldChild === undefined) delete process.env.PI_ACCOUNT_SWITCHER_CHILD_ID;
+        else process.env.PI_ACCOUNT_SWITCHER_CHILD_ID = oldChild;
+        if (oldActive === undefined) delete process.env.PI_ACCOUNT_SWITCHER_ACTIVE_ID;
+        else process.env.PI_ACCOUNT_SWITCHER_ACTIVE_ID = oldActive;
+      }
+    });
+
+    it("ignores obsolete NEXT_ID while preserving inherited parent selection", async () => {
       const dir = await mkdtemp(join(tmpdir(), "runtime-cascade-"));
       const accPath = join(dir, "accounts.json");
       const provPath = join(dir, "providers.json");
@@ -276,7 +302,7 @@ describe("AccountSwitcherRuntime", () => {
         piAuth: { provider: "opencode", entry: { type: "api_key", key: "sk" } },
       });
 
-      // Set both env vars — NEXT_ID should win
+      // Legacy pending selections must not activate an unsupported one-shot.
       const oldNext = process.env.PI_ACCOUNT_SWITCHER_NEXT_ID;
       const oldActive = process.env.PI_ACCOUNT_SWITCHER_ACTIVE_ID;
       process.env.PI_ACCOUNT_SWITCHER_NEXT_ID = "next-acc";
@@ -287,8 +313,7 @@ describe("AccountSwitcherRuntime", () => {
         const ctx = mockCtx({});
         await runtime.init(ctx);
 
-        // NEXT_ID consumed, next-acc activated
-        expect(runtime.getActiveAccount()?.id).toBe("next-acc");
+        expect(runtime.getActiveAccount()?.id).toBe("active-acc");
         // NEXT_ID should be deleted after consumption
         expect(process.env.PI_ACCOUNT_SWITCHER_NEXT_ID).toBeUndefined();
         // ACTIVE_ID is also set to the activated account (side effect of activateAccount)

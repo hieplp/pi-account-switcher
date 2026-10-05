@@ -3,19 +3,24 @@ import type { ModelRegistry } from "@earendil-works/pi-coding-agent";
 import type { AccountConfig, SecretSource } from "../types";
 import { commonUtil } from "./common";
 import { fileUtil } from "./files";
+import { piCredentialUtil } from "./pi-credentials";
 import { providerUtil } from "./providers";
 
 export const accountUtil = {
-  clearAccountEnv: async (account: AccountConfig, modelRegistry?: ModelRegistry): Promise<void> => {
+  clearAccountEnv: async (
+    account: AccountConfig,
+    modelRegistry?: ModelRegistry,
+    authProviderOverride?: string,
+  ): Promise<void> => {
     // Clear the cross-process inheritance env var
     delete process.env.PI_ACCOUNT_SWITCHER_ACTIVE_ID;
-    const authProvider = account.piAuth?.provider ?? providerUtil.normalizeProvider(account.provider);
+    const authProvider = authProviderOverride ?? account.piAuth?.provider ?? providerUtil.normalizeProvider(account.provider);
     if (!account.piAuth && account.env) {
       for (const envName of Object.keys(account.env)) {
         delete process.env[envName];
       }
     }
-    modelRegistry?.authStorage.removeRuntimeApiKey(authProvider);
+    await removeRuntimeApiKey(modelRegistry, authProvider);
   },
 
   applyAccountEnv: async (
@@ -25,8 +30,7 @@ export const accountUtil = {
   ): Promise<string[]> => {
     if (account.piAuth) {
       const authProvider = authProviderOverride ?? account.piAuth.provider;
-      modelRegistry?.authStorage.set(authProvider, account.piAuth.entry);
-      modelRegistry?.authStorage.reload();
+      await setStoredAuth(modelRegistry, authProvider, account.piAuth.entry);
       closeCachedSessions();
       return [];
     }
@@ -47,12 +51,12 @@ export const accountUtil = {
     return resolvedEntries;
   },
 
-  applyResolvedAccountEnv: (
+  applyResolvedAccountEnv: async (
     account: AccountConfig,
     resolvedEntries: Array<[string, string]>,
     modelRegistry?: ModelRegistry,
     authProviderOverride?: string,
-  ): string[] => {
+  ): Promise<string[]> => {
     const authProvider = authProviderOverride ?? providerUtil.normalizeProvider(account.provider);
     const applied: string[] = [];
     for (const [envName, value] of resolvedEntries) {
@@ -61,8 +65,8 @@ export const accountUtil = {
     }
 
     const firstValue = resolvedEntries[0]?.[1];
-    if (firstValue) modelRegistry?.authStorage.setRuntimeApiKey(authProvider, firstValue);
-    else modelRegistry?.authStorage.removeRuntimeApiKey(authProvider);
+    if (firstValue) await piCredentialUtil.setRuntimeApiKey(modelRegistry, authProvider, firstValue);
+    else await piCredentialUtil.removeRuntimeApiKey(modelRegistry, authProvider);
 
     return applied;
   },
@@ -138,6 +142,18 @@ export function removeDirFromAccount<T extends { id: string; label: string; prov
   if (filtered.length === dirs.length) return null;
   if (filtered.length === 0) return { ...account, dirs: undefined };
   return { ...account, dirs: filtered };
+}
+
+async function setStoredAuth(
+  modelRegistry: ModelRegistry | undefined,
+  provider: string,
+  entry: unknown,
+): Promise<void> {
+  await piCredentialUtil.setStoredCredential(modelRegistry, provider, entry as never);
+}
+
+async function removeRuntimeApiKey(modelRegistry: ModelRegistry | undefined, provider: string): Promise<void> {
+  await piCredentialUtil.removeRuntimeApiKey(modelRegistry, provider);
 }
 
 function closeCachedSessions(): void {

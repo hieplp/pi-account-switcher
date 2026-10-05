@@ -18,10 +18,7 @@ class ModelServiceImpl implements ModelService {
   async applyModel(model: ProviderModel, ctx: AccountSwitcherContext): Promise<void> {
     const ok = await this.pi.setModel(model);
     if (!ok) {
-      ctx.ui.notify(
-        `Account switched, but Pi refused model ${model.provider}/${model.id}. Check credentials.`,
-        "warning",
-      );
+      throw new Error(`Pi refused model ${model.provider}/${model.id}. Check credentials.`);
     }
   }
 }

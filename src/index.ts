@@ -6,6 +6,10 @@ import { registerAllCommands } from "./commands";
 async function accountSwitcher(pi: ExtensionAPI) {
   const runtime: AccountSwitcher = useAccountSwitcher(pi);
 
+  // Pi applies initialization registrations before listing/selecting models.
+  // Account credentials and selection remain session_start responsibilities.
+  await runtime.loadProviderCatalog();
+
   pi.on("session_start", async (_, ctx) => {
     await runtime.init(ctx as AccountSwitcherContext);
   });

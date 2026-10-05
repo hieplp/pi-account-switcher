@@ -1,0 +1,67 @@
+import assert from 'node:assert/strict';
+import { mkdtemp, readFile } from 'node:fs/promises';
+import { ModelRuntime, ModelRegistry } from '@earendil-works/pi-coding-agent';
+import { createJiti } from '@mariozechner/jiti';
+const root = process.env.ACCEPTANCE_ROOT ?? '/work';
+const jiti = createJiti(import.meta.url);
+const { default: Switcher } = await jiti.import(`${root}/src/runtime/account-switcher-runtime.ts`);
+const { useVerifyAccountsCommand } = await jiti.import(`${root}/src/commands/accounts/verify.ts`);
+for (const kind of ['env', 'provider-key', 'catalog-key', 'oauth']) for (const outcome of ['success', 'error', 'cancel', 'aborted']) {
+  const dir = await mkdtemp('/tmp/verification-');
+  const runtime = await ModelRuntime.create({ authPath: `${dir}/auth.json`, modelsPath: null, allowModelNetwork: false });
+  const registry = new ModelRegistry(runtime);
+  let command;
+  const pi = { registerCommand(name, definition) { command = definition; }, registerProvider() {}, setModel: async () => true };
+  const switcher = new Switcher(pi, { accounts: `${dir}/accounts.json`, providers: `${dir}/providers.json`, state: `${dir}/state.json` });
+  delete process.env.PI_ACCOUNT_SWITCHER_ACTIVE_ID;
+  await switcher.init({ modelRegistry: registry, sessionManager: { getSessionFile: () => `${dir}/session.jsonl` }, ui: { setStatus() {} } });
+  const oauth = kind === 'oauth';
+  const credential = oauth ? { type: 'oauth', access: 'fake-target-access', refresh: 'fake-refresh', expires: 4102444800000 } : undefined;
+  const target = { id: 'target', label: 'Target', provider: oauth ? 'anthropic' : 'openai', ...(oauth ? { piAuth: { provider: 'anthropic', entry: credential } } : kind === 'catalog-key' ? { usesProviderApiKey: true } : kind === 'provider-key' ? { providerApiKey: 'fake-target-key' } : { env: { VERIFY_FAKE_KEY: 'fake-target-key' } }) };
+  await switcher.addProvider({ id: target.provider, apiKey: 'fake-catalog-key' });
+  await switcher.addAccount(target);
+  const provider = target.provider;
+  await runtime.credentials.modify(provider, async () => ({ type: 'api_key', key: 'fake-stored' }));
+  const parent = { id: 'parent', label: 'Parent', provider, env: { VERIFY_PARENT_KEY: 'fake-parent' } };
+  await switcher.addAccount(parent);
+  const parentModel = registry.getAll().find(m => m.provider === provider);
+  await switcher.activateAccount(parent, { modelRegistry: registry, model: parentModel, ui: { setStatus() {} } });
+  const stateBefore = await readFile(`${dir}/state.json`, 'utf8');
+  await runtime.setRuntimeApiKey('google', 'fake-unrelated');
+  process.env.VERIFY_FAKE_KEY = 'fake-env-before';
+  process.env.PI_ACCOUNT_SWITCHER_ACTIVE_ID = 'parent';
+  runtime.registerProvider(provider, { apiKey: 'fake-registered-parent' });
+  await runtime.refresh({ allowNetwork: false });
+  const catalogBefore = registry.getAll();
+  const authBefore = await readFile(`${dir}/auth.json`, 'utf8');
+  let report = '';
+  const model = registry.getAll().find(m => m.provider === provider);
+  assert.ok(model);
+  // The only replaced boundary is the provider request. Credential resolution remains actual Pi.
+  let probes = 0;
+  registry.complete = async (requested) => {
+    const auth = await registry.getApiKeyAndHeaders(requested);
+    assert.equal(auth.ok, true);
+    // Targets are verified in saved order: requested target, then parent.
+    assert.equal(auth.apiKey, probes++ === 0 ? (oauth ? 'fake-target-access' : kind === 'catalog-key' ? 'fake-catalog-key' : 'fake-target-key') : 'fake-parent');
+    if (outcome === 'aborted') return { stopReason: 'aborted', content: [] };
+    if (outcome !== 'success') throw Object.assign(new Error(outcome), { name: outcome === 'cancel' ? 'AbortError' : 'Error' });
+    return { stopReason: 'stop', content: [{ type: 'text', text: 'OK' }] };
+  };
+  useVerifyAccountsCommand(pi, switcher);
+  await command.handler('all ping', { modelRegistry: registry, model, ui: { notify() {}, setEditorText(text) { report = text; } } });
+  assert.match(report, outcome === 'success' ? /2 passed, 0 failed/ : /0 passed, 2 failed/);
+  assert.equal(await registry.getApiKeyForProvider(provider), 'fake-parent');
+  assert.equal(await registry.getApiKeyForProvider('google'), 'fake-unrelated');
+  assert.equal(await readFile(`${dir}/auth.json`, 'utf8'), authBefore);
+  assert.equal(process.env.VERIFY_FAKE_KEY, 'fake-env-before');
+  assert.equal(process.env.PI_ACCOUNT_SWITCHER_ACTIVE_ID, 'parent');
+  assert.equal(switcher.getActiveAccount()?.id, 'parent');
+  assert.equal(await readFile(`${dir}/state.json`, 'utf8'), stateBefore);
+  assert.deepEqual(registry.getAll(), catalogBefore);
+  await runtime.removeRuntimeApiKey(provider);
+  await runtime.credentials.delete(provider);
+  await runtime.refresh({ allowNetwork: false });
+  assert.equal(await registry.getApiKeyForProvider(provider), 'fake-registered-parent');
+}
+console.log('Verification: API-key and OAuth-shaped success/error/cancellation use target credentials and restore parent state');
